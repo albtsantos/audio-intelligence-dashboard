@@ -50,13 +50,38 @@ def plot_audio(val):
 
 
 # Set visibility of transcription option components when de/selected
-def set_tran_opt_vis(transcription_options):
+def set_lang_vis(transcription_options):
     if 'Automatic Language Detection' in transcription_options:
         return gr.Dropdown.update(visible=False)
     else:
         return gr.Dropdown.update(visible=True)
 
 
+def option_verif(language, transcription_options, audio_intelligence_selector):
+    if language in ['Spanish', 'French', 'German', 'Portuguese']:
+        not_available_tran = ['Speaker Labels']
+        not_available_audint = ['PII Redaction', 'Auto Highlights', 'Sentiment Analysis', 'Summarization',
+                                'Entity Detection']
+
+    elif language in ['Italian', 'Dutch']:
+        not_available_tran = ['Speaker Labels']
+        not_available_audint = ['PII Redaction', 'Auto Highlights', 'Content Moderation', 'Topic Detection',
+                                'Sentiment Analysis', 'Summarization', 'Entity Detection']
+
+    elif language in ['Hindi', 'Japanese']:
+        not_available_tran = ['Speaker Labels']
+        not_available_audint = ['PII Redaction', 'Auto Highlights', 'Content Moderation', 'Topic Detection',
+                                'Sentiment Analysis', 'Summarization', 'Entity Detection']
+
+    else:
+        not_available_tran = []
+        not_available_audint = []
+
+    return [gr.CheckboxGroup.update(list(set(transcription_options) - set(not_available_tran))),
+            gr.CheckboxGroup.update(list(set(audio_intelligence_selector) - set(not_available_audint)))]
+
+
+'''
 def make_true_dict(transcription_options, audio_intelligence_selector):
     global DICT
     print(DICT)
@@ -68,6 +93,7 @@ def make_true_dict(transcription_options, audio_intelligence_selector):
 
     make_final_header = {**aai_tran_dict, **aai_audint_dict}
     DICT = make_final_header
+'''
 
 with gr.Blocks() as demo:
     radio = gr.Radio(["Audio File", "Record Audio"], label="Audio Source", value="Audio File")
@@ -77,15 +103,15 @@ with gr.Blocks() as demo:
 
     audio_wave = gr.Plot()
 
-    transcription_options = gr.Checkboxgroup(
+    transcription_options = gr.CheckboxGroup(
         list(transcription_options_headers.keys()),
         label="Transcription Options",
         value=["Automatic Language Detection"]
     )
 
-    audio_intelligence_selector = gr.Checkboxgroup(
+    audio_intelligence_selector = gr.CheckboxGroup(
         list(audio_intelligence_headers.keys()),
-        label='Audio Intelligence Options'
+        label='Audio Intelligence Options', interactive=True
     )
 
     language = gr.Dropdown(
@@ -109,14 +135,18 @@ with gr.Blocks() as demo:
 
     # Deselecting Automatic Language Detection shows Language Selector
     transcription_options.change(
-        fn=set_tran_opt_vis,
+        fn=set_lang_vis,
         inputs=transcription_options,
         outputs=language)
 
-    # Changing language changes which Audio Intelligence options are available
+    # Changing language deselects certain Audio Intelligence options
+    language.change(
+        fn=option_verif,
+        inputs=[language, transcription_options, audio_intelligence_selector],
+        outputs=[transcription_options, audio_intelligence_selector]
+    )
 
 
-
-    submit.click(fn=make_true_dict, inputs=[transcription_options, audio_intelligence_selector], outputs=None)
+    #submit.click(fn=make_true_dict, inputs=[transcription_options, audio_intelligence_selector], outputs=None)
 
 demo.launch()
