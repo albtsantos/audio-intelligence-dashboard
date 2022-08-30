@@ -1,12 +1,6 @@
 import gradio as gr
 
 
-class OtherTextbox(gr.Textbox):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-
 def change_audio_source(val):
     if val == "Audio File":
         return [gr.Audio.update(visible=True), gr.Image.update(visible=False)]
