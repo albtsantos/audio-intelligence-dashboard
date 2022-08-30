@@ -77,35 +77,23 @@ with gr.Blocks() as demo:
 
     audio_wave = gr.Plot()
 
-    transcription_options = gr.Checkboxgroup([
-        'Automatic Language Detection',
-        'Speaker Labels',
-        'Filter Profanity',
-    ], label="Transcription Options", value=["Automatic Language Detection"])
+    transcription_options = gr.Checkboxgroup(
+        list(transcription_options_headers.keys()),
+        label="Transcription Options",
+        value=["Automatic Language Detection"]
+    )
 
-    audio_intelligence_selector = gr.Checkboxgroup([
-        'Summarization',
-        'Auto Highlights',
-        'Topic Detection',
-        'Entity Detection',
-        'Sentiment Analysis',
-        'PII Redaction',
-        'Content Moderation',
-    ], label='Audio Intelligence Options')
+    audio_intelligence_selector = gr.Checkboxgroup(
+        list(audio_intelligence_headers.keys()),
+        label='Audio Intelligence Options'
+    )
 
-    language = gr.Dropdown(['Global English',
-                            'US English',
-                            'British English',
-                            'Australian English',
-                            'Spanish',
-                            'French',
-                            'German',
-                            'Italian',
-                            'Portuguese',
-                            'Dutch',
-                            'Hindi',
-                            'Japanese'
-                            ], value='US English', visible=False, label="Language Specification")
+    language = gr.Dropdown(
+        list(language_headers.keys()),
+        label="Language Specification",
+        value='US English',
+        visible=False,
+    )
 
     submit = gr.Button('Submit')
 
