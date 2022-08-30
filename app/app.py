@@ -51,10 +51,10 @@ def plot_audio(val):
 
 # Set visibility of transcription option components when de/selected
 def set_tran_opt_vis(transcription_options):
-    if 'Automatic Language Detection' not in transcription_options:
-        return gr.Dropdown.update(visible=True)
-    else:
+    if 'Automatic Language Detection' in transcription_options:
         return gr.Dropdown.update(visible=False)
+    else:
+        return gr.Dropdown.update(visible=True)
 
 
 def make_true_dict(transcription_options, audio_intelligence_selector):
@@ -108,7 +108,10 @@ with gr.Blocks() as demo:
         getattr(component, 'change')(fn=plot_audio, inputs=component, outputs=audio_wave)
 
     # Deselecting Automatic Language Detection shows Language Selector
-    transcription_options.change(fn=set_tran_opt_vis, inputs=transcription_options, outputs=language)
+    transcription_options.change(
+        fn=set_tran_opt_vis,
+        inputs=transcription_options,
+        outputs=language)
 
     # Changing language changes which Audio Intelligence options are available
 
