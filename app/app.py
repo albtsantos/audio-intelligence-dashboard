@@ -35,6 +35,14 @@ language_headers = {
     'Japanese': 'jp',
 }
 
+# Options that the use wants
+selected_tran_opts = []
+selected_audint_opts = []
+
+# Current options = selected options - unavailable for specified language
+current_tran_opts = []
+current_audint_opts = []
+
 def change_audio_source(val):
     if val == "Audio File":
         return [gr.Audio.update(visible=True), gr.Image.update(visible=False)]
@@ -57,7 +65,23 @@ def set_lang_vis(transcription_options):
         return gr.Dropdown.update(visible=True)
 
 
+# Verify which options are used, deselecting unavailable ones
 def option_verif(language, transcription_options, audio_intelligence_selector):
+    global selected_tran_opts
+    global selected_audint_opts
+    global current_tran_opts
+    global current_audint_opts
+
+    not_available_tran, not_available_audint = get_unavailable_opts(language)
+
+    current_tran_opts = list(set(selected_tran_opts) - set(not_available_tran))
+    current_audint_opts = list(set(selected_audint_opts) - set(not_available_audint))
+
+    return [gr.CheckboxGroup.update(current_tran_opts), gr.CheckboxGroup.update(current_audint_opts)]
+
+
+# Get tran/audint opts that are not available by language
+def get_unavailable_opts(language):
     if language in ['Spanish', 'French', 'German', 'Portuguese']:
         not_available_tran = ['Speaker Labels']
         not_available_audint = ['PII Redaction', 'Auto Highlights', 'Sentiment Analysis', 'Summarization',
@@ -77,9 +101,18 @@ def option_verif(language, transcription_options, audio_intelligence_selector):
         not_available_tran = []
         not_available_audint = []
 
-    return [gr.CheckboxGroup.update(list(set(transcription_options) - set(not_available_tran))),
-            gr.CheckboxGroup.update(list(set(audio_intelligence_selector) - set(not_available_audint)))]
+    return not_available_tran, not_available_audint
 
+
+# When selecting new audint option, checks to make sure allowed by language and
+# then adds to selected_audint_opts and updates
+def audint_selected(language, audio_intelligence_selector):
+    global selected_audint_opts
+
+    _, unavailable = get_unavailable_opts(language)
+    selected_audint_opts = list(set(audio_intelligence_selector) - set(unavailable))
+
+    return gr.CheckboxGroup.update(selected_audint_opts)
 
 '''
 def make_true_dict(transcription_options, audio_intelligence_selector):
@@ -108,6 +141,9 @@ with gr.Blocks() as demo:
         label="Transcription Options",
         value=["Automatic Language Detection"]
     )
+
+    auto_lang_detect_warning = gr.HTML("<p>WARNING: Automatic Language Detection not compatible with Australian, British,"
+                                       "and Global English, Hindi, and Japanese</p>")
 
     audio_intelligence_selector = gr.CheckboxGroup(
         list(audio_intelligence_headers.keys()),
@@ -144,6 +180,13 @@ with gr.Blocks() as demo:
         fn=option_verif,
         inputs=[language, transcription_options, audio_intelligence_selector],
         outputs=[transcription_options, audio_intelligence_selector]
+    )
+
+    # Selecting audio intelligence options adds it to selected if language allows it
+    audio_intelligence_selector.change(
+        fn=audint_selected,
+        inputs=[language, audio_intelligence_selector],
+        outputs=audio_intelligence_selector
     )
 
 
