@@ -5,20 +5,36 @@ DICT = {}
 
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
-        'Speaker Labels': 'speaker_labels',
-        'Language': 'language_code',
-        'Filter Profanity': 'filter_profanity',
+    'Automatic Language Detection': 'language_detection',
+    'Speaker Labels': 'speaker_labels',
+    'Filter Profanity': 'filter_profanity',
 }
 
 audio_intelligence_headers = {
-        'Summarization': 'auto_chapters',
-        'Auto Highlights': 'auto_highlights',
-        'Topic Detection': 'iab_categories',
-        'Entity Detection': 'entity_detection',
-        'Sentiment Analysis': 'sentiment_analysis',
-        'PII Redaction': 'redact_pii',
-        'Content Moderation': 'content_safety',
+    'Summarization': 'auto_chapters',
+    'Auto Highlights': 'auto_highlights',
+    'Topic Detection': 'iab_categories',
+    'Entity Detection': 'entity_detection',
+    'Sentiment Analysis': 'sentiment_analysis',
+    'PII Redaction': 'redact_pii',
+    'Content Moderation': 'content_safety',
 }
+
+language_headers = {
+    'Global English': 'en',
+    'US English': 'en_us',
+    'British English': 'en_uk',
+    'Australian English': 'en_au',
+    'Spanish': 'es',
+    'French': 'fr',
+    'German': 'de',
+    'Italian': 'it',
+    'Portuguese': 'pt',
+    'Dutch': 'nl',
+    'Hindi': 'hi',
+    'Japanese': 'jp',
+}
+
 def change_audio_source(val):
     if val == "Audio File":
         return [gr.Audio.update(visible=True), gr.Image.update(visible=False)]
@@ -26,12 +42,20 @@ def change_audio_source(val):
         return [gr.Audio.update(visible=False), gr.Image.update(visible=True)]
 
 
+# Plot audio
 def plot_audio(val):
     audio_data = val[1]
-    #fig = plt.Figure()
-    #plt.plot(audio_data)
     fig = px.line(audio_data)
     return fig
+
+
+# Set visibility of transcription option components when de/selected
+def set_tran_opt_vis(transcription_options):
+    if 'Automatic Language Detection' not in transcription_options:
+        return gr.Dropdown.update(visible=True)
+    else:
+        return gr.Dropdown.update(visible=False)
+
 
 def make_true_dict(transcription_options, audio_intelligence_selector):
     global DICT
@@ -54,10 +78,10 @@ with gr.Blocks() as demo:
     audio_wave = gr.Plot()
 
     transcription_options = gr.Checkboxgroup([
+        'Automatic Language Detection',
         'Speaker Labels',
-        'Language',
         'Filter Profanity',
-    ])
+    ], label="Transcription Options", value=["Automatic Language Detection"])
 
     audio_intelligence_selector = gr.Checkboxgroup([
         'Summarization',
@@ -67,7 +91,21 @@ with gr.Blocks() as demo:
         'Sentiment Analysis',
         'PII Redaction',
         'Content Moderation',
-    ])
+    ], label='Audio Intelligence Options')
+
+    language = gr.Dropdown(['Global English',
+                            'US English',
+                            'British English',
+                            'Australian English',
+                            'Spanish',
+                            'French',
+                            'German',
+                            'Italian',
+                            'Portuguese',
+                            'Dutch',
+                            'Hindi',
+                            'Japanese'
+                            ], value='US English', visible=False, label="Language Specification")
 
     submit = gr.Button('Submit')
 
@@ -80,6 +118,13 @@ with gr.Blocks() as demo:
     # Inputting audio updates plot
     for component in [audio_file, mic_recording]:
         getattr(component, 'change')(fn=plot_audio, inputs=component, outputs=audio_wave)
+
+    # Deselecting Automatic Language Detection shows Language Selector
+    transcription_options.change(fn=set_tran_opt_vis, inputs=transcription_options, outputs=language)
+
+    # Changing language changes which Audio Intelligence options are available
+
+
 
     submit.click(fn=make_true_dict, inputs=[transcription_options, audio_intelligence_selector], outputs=None)
 
