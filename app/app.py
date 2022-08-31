@@ -1,5 +1,8 @@
 import gradio as gr
+import numpy as np
 import plotly.express as px
+import plotly
+import plotly.graph_objects as go
 
 DICT = {}
 
@@ -43,26 +46,66 @@ selected_audint_opts = []
 current_tran_opts = []
 current_audint_opts = []
 
+plot = px.line(labels={'x':'Time (s)', 'y':''})
+file_data = [1, [0]]
+mic_data = [1, [0]]
+
+
+
 def change_audio_source(val):
+    global plot
+    plot.update_traces(go.Line(y=[]))
     if val == "Audio File":
-        return [gr.Audio.update(visible=True), gr.Image.update(visible=False)]
+        global file_data
+        sample_rate, audio_data = file_data
+        plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data)) / sample_rate))
+        return [gr.Audio.update(visible=True), gr.Audio.update(visible=False), gr.Plot.update(plot)]
     elif val == "Record Audio":
-        return [gr.Audio.update(visible=False), gr.Image.update(visible=True)]
+        global mic_data
+        sample_rate, audio_data = mic_data
+        plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data)) / sample_rate))
+
+        return [gr.Audio.update(visible=False), gr.Audio.update(visible=True), gr.Plot.update(plot)]
 
 
 # Plot audio
-def plot_audio(val):
-    audio_data = val[1]
-    fig = px.line(audio_data)
-    return fig
+def plot_file_data(audio_data):
+    global file_data
+    global plot
+    file_data = audio_data
+
+    if audio_data is None:
+        file_data = [1, [0]]
+        plot.update_traces(go.Line(y=[]))
+    else:
+        sample_rate, audio_data = audio_data
+        plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data))/sample_rate))
+    return gr.Plot.update(plot)
+
+
+# Plot audio
+def plot_mic_data(audio_data):
+    global mic_data
+    global plot
+    mic_data = audio_data
+
+    if audio_data is None:
+        mic_data = [1, [0]]
+        plot.update_traces(go.Line(y=[]))
+    else:
+        sample_rate, audio_data = audio_data
+        plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data)) / sample_rate))
+    return gr.Plot.update(plot)
 
 
 # Set visibility of transcription option components when de/selected
 def set_lang_vis(transcription_options):
     if 'Automatic Language Detection' in transcription_options:
-        return gr.Dropdown.update(visible=False)
+        return [gr.Dropdown.update(visible=False),
+                gr.Textbox.update(visible=True)]
     else:
-        return gr.Dropdown.update(visible=True)
+        return [gr.Dropdown.update(visible=True),
+                gr.Textbox.update(visible=False)]
 
 
 # Verify which options are used, deselecting unavailable ones
@@ -134,7 +177,7 @@ with gr.Blocks() as demo:
         audio_file = gr.Audio(interactive=True)
         mic_recording = gr.Audio(source="microphone", visible=False, interactive=True)
 
-    audio_wave = gr.Plot()
+    audio_wave = gr.Plot(plot)
 
     transcription_options = gr.CheckboxGroup(
         list(transcription_options_headers.keys()),
@@ -142,8 +185,9 @@ with gr.Blocks() as demo:
         value=["Automatic Language Detection"]
     )
 
-    auto_lang_detect_warning = gr.HTML("<p>WARNING: Automatic Language Detection not compatible with Australian, British,"
-                                       "and Global English, Hindi, and Japanese</p>")
+    auto_lang_detect_warning = gr.HTML("<p>WARNING: Automatic Language Detection not available for Hindi or Japanese. "
+                                       "For best results on non-US English audio, specify the dialect instead of using "
+                                       "Automatic Language Detection</p>")
 
     audio_intelligence_selector = gr.CheckboxGroup(
         list(audio_intelligence_headers.keys()),
@@ -163,17 +207,19 @@ with gr.Blocks() as demo:
     ####################################### Functionality ######################################################
 
     # Changing audio source changes Audio input component
-    radio.change(fn=change_audio_source, inputs=radio, outputs=[audio_file, mic_recording])
+    radio.change(fn=change_audio_source, inputs=radio, outputs=[audio_file, mic_recording, audio_wave])
 
     # Inputting audio updates plot
-    for component in [audio_file, mic_recording]:
-        getattr(component, 'change')(fn=plot_audio, inputs=component, outputs=audio_wave)
+    #for component in [audio_file, mic_recording]:
+    #    getattr(component, 'change')(fn=plot_audio, inputs=component, outputs=audio_wave)
+    audio_file.change(fn=plot_file_data, inputs=audio_file, outputs=audio_wave)
+    mic_recording.change(fn=plot_mic_data, inputs=mic_recording, outputs=audio_wave)
 
     # Deselecting Automatic Language Detection shows Language Selector
     transcription_options.change(
         fn=set_lang_vis,
         inputs=transcription_options,
-        outputs=language)
+        outputs=[language, auto_lang_detect_warning])
 
     # Changing language deselects certain Audio Intelligence options
     language.change(
