@@ -67,13 +67,15 @@ def change_audio_source(val):
 
         return [gr.Audio.update(visible=False), gr.Audio.update(visible=True), gr.Plot.update(plot)]
 
+def plot_data(audio_data, audio_source):
+    if audio_source == 'file_data':
+        global file_data
+        file_data = audio_data
+    elif audio_source == 'mic_data':
+        global mic_data
+        mic_data = audio_data
 
-# Plot audio
-def plot_file_data(audio_data):
-    global file_data
     global plot
-    file_data = audio_data
-
     if audio_data is None:
         file_data = [1, [0]]
         plot.update_traces(go.Line(y=[]))
@@ -84,18 +86,13 @@ def plot_file_data(audio_data):
 
 
 # Plot audio
-def plot_mic_data(audio_data):
-    global mic_data
-    global plot
-    mic_data = audio_data
+def plot_file_data(audio_data):
+    return plot_data(audio_data, audio_source='file_data')
 
-    if audio_data is None:
-        mic_data = [1, [0]]
-        plot.update_traces(go.Line(y=[]))
-    else:
-        sample_rate, audio_data = audio_data
-        plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data)) / sample_rate))
-    return gr.Plot.update(plot)
+
+# Plot audio
+def plot_mic_data(audio_data):
+    return plot_data(audio_data, audio_source='mic_data')
 
 
 # Set visibility of transcription option components when de/selected
