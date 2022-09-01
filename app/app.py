@@ -67,6 +67,8 @@ def change_audio_source(val):
 
         return [gr.Audio.update(visible=False), gr.Audio.update(visible=True), gr.Plot.update(plot)]
 
+
+# Function to change saved data and plot it when audio file is input or mic is recorded
 def plot_data(audio_data, audio_source):
     if audio_source == 'file_data':
         global file_data
@@ -85,12 +87,12 @@ def plot_data(audio_data, audio_source):
     return gr.Plot.update(plot)
 
 
-# Plot audio
+# plot_data for use in .change for audio file
 def plot_file_data(audio_data):
     return plot_data(audio_data, audio_source='file_data')
 
 
-# Plot audio
+# plot_data for use in .change for audio file
 def plot_mic_data(audio_data):
     return plot_data(audio_data, audio_source='mic_data')
 
@@ -154,19 +156,30 @@ def audint_selected(language, audio_intelligence_selector):
 
     return gr.CheckboxGroup.update(selected_audint_opts)
 
-'''
-def make_true_dict(transcription_options, audio_intelligence_selector):
+
+# Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
+def make_true_dict(transcription_options, audio_intelligence_selector, language):
     global DICT
-    print(DICT)
+
     aai_tran_keys = [transcription_options_headers[elt] for elt in transcription_options]
     aai_audint_keys = [audio_intelligence_headers[elt] for elt in audio_intelligence_selector]
 
     aai_tran_dict = {key: True for key in aai_tran_keys}
     aai_audint_dict = {key: True for key in aai_audint_keys}
 
-    make_final_header = {**aai_tran_dict, **aai_audint_dict}
-    DICT = make_final_header
-'''
+    combined = {**aai_tran_dict, **aai_audint_dict}
+    final_header = make_final_header(combined, language)
+    DICT = final_header
+
+
+# Takes in a dictionary of AAI API options and adds all required other kwargs
+def make_final_header(true_dict, language):
+    if 'language_detection' not in true_dict:
+        true_dict = {**true_dict, 'language_code': language_headers[language]}
+    return true_dict
+
+
+
 
 with gr.Blocks() as demo:
     radio = gr.Radio(["Audio File", "Record Audio"], label="Audio Source", value="Audio File")
@@ -182,9 +195,14 @@ with gr.Blocks() as demo:
         value=["Automatic Language Detection"]
     )
 
-    auto_lang_detect_warning = gr.HTML("<p>WARNING: Automatic Language Detection not available for Hindi or Japanese. "
-                                       "For best results on non-US English audio, specify the dialect instead of using "
-                                       "Automatic Language Detection</p>")
+    w = "<div>" \
+        "<p>WARNING: Automatic Language Detection not available for Hindi or Japanese. For best results on non-US " \
+        "English audio, specify the dialect instead of using Automatic Language Detection</p>" \
+        "<p>WARNING: Some Audio Intelligence features are not available in some languages. See " \
+        "<a href='https://airtable.com/shr53TWU5reXkAmt2/tblf7O4cffFndmsCH?backgroundColor=green'>here</a> " \
+        "for more details.</p>" \
+        "</div>"
+    auto_lang_detect_warning = gr.HTML(w)
 
     audio_intelligence_selector = gr.CheckboxGroup(
         list(audio_intelligence_headers.keys()),
@@ -197,8 +215,19 @@ with gr.Blocks() as demo:
         value='US English',
         visible=False,
     )
-
     submit = gr.Button('Submit')
+
+    #gr.HighlightedText(value=[('hello', 1), ('asdasdd', 0), ('asasd', 1), ('asasd', 2)]).style(color_map={
+    #    '0': '#FFFFFF', '1' : '#FF00FF', '2': '#FF0F0F'})
+
+    with gr.Tab('Transcription'):
+        gr.Textbox(placeholder="Your transcription will appear here ...", lines=5, max_lines=25)
+    with gr.Tab('Auto Highlights'):
+        gr.Textbox("Your transcription will appear here ...", interactive=True)
+    with gr.Tab('Summary'):
+        gr.Textbox("Your transcription will appear here ...", interactive=True)
+
+
 
 
     ####################################### Functionality ######################################################
@@ -232,7 +261,10 @@ with gr.Blocks() as demo:
         outputs=audio_intelligence_selector
     )
 
-
-    #submit.click(fn=make_true_dict, inputs=[transcription_options, audio_intelligence_selector], outputs=None)
+    submit.click(fn=make_true_dict,
+                 inputs=[transcription_options,
+                         audio_intelligence_selector,
+                         language],
+                 outputs=None)
 
 demo.launch()
