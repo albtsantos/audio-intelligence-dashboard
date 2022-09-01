@@ -146,6 +146,17 @@ def get_unavailable_opts(language):
     return not_available_tran, not_available_audint
 
 
+# When selecting new tran option, checks to make sure allowed by language and
+# then adds to selected_tran_opts and updates
+def tran_selected(language, transcription_options):
+    global selected_tran_opts
+
+    unavailable, _ = get_unavailable_opts(language)
+    selected_tran_opts = list(set(transcription_options) - set(unavailable))
+
+    return gr.CheckboxGroup.update(selected_tran_opts)
+
+
 # When selecting new audint option, checks to make sure allowed by language and
 # then adds to selected_audint_opts and updates
 def audint_selected(language, audio_intelligence_selector):
@@ -247,12 +258,20 @@ with gr.Blocks() as demo:
         inputs=transcription_options,
         outputs=[language, auto_lang_detect_warning])
 
-    # Changing language deselects certain Audio Intelligence options
+    # Changing language deselects certain Tran / Audio Intelligence options
     language.change(
         fn=option_verif,
         inputs=[language, transcription_options, audio_intelligence_selector],
         outputs=[transcription_options, audio_intelligence_selector]
     )
+
+    # Selecting Tran options adds it to selected if language allows it
+    transcription_options.change(
+        fn=tran_selected,
+        inputs=[language, transcription_options],
+        outputs=transcription_options
+    )
+
 
     # Selecting audio intelligence options adds it to selected if language allows it
     audio_intelligence_selector.change(
