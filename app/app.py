@@ -46,55 +46,38 @@ selected_audint_opts = []
 current_tran_opts = []
 current_audint_opts = []
 
-plot = px.line(labels={'x':'Time (s)', 'y':''})
-file_data = [1, [0]]
-mic_data = [1, [0]]
 
-
-
-def change_audio_source(val):
-    global plot
+def change_audio_source(val, plot, file_data=None, mic_data=None):
     plot.update_traces(go.Line(y=[]))
     if val == "Audio File":
-        global file_data
+        print("FILE DATA", file_data)
         sample_rate, audio_data = file_data
         plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data)) / sample_rate))
-        return [gr.Audio.update(visible=True), gr.Audio.update(visible=False), gr.Plot.update(plot)]
+        return [gr.Audio.update(visible=True),
+                gr.Audio.update(visible=False),
+                gr.Plot.update(plot),
+                plot]
     elif val == "Record Audio":
-        global mic_data
+        print("MIX DATA", mic_data)
         sample_rate, audio_data = mic_data
         plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data)) / sample_rate))
 
-        return [gr.Audio.update(visible=False), gr.Audio.update(visible=True), gr.Plot.update(plot)]
+        return [gr.Audio.update(visible=False),
+                gr.Audio.update(visible=True),
+                gr.Plot.update(plot),
+                plot]
 
 
 # Function to change saved data and plot it when audio file is input or mic is recorded
-def plot_data(audio_data, audio_source):
-    if audio_source == 'file_data':
-        global file_data
-        file_data = audio_data
-    elif audio_source == 'mic_data':
-        global mic_data
-        mic_data = audio_data
-
-    global plot
+def plot_data(audio_data, plot):
     if audio_data is None:
-        file_data = [1, [0]]
+        audio_data = [1, [0]]
         plot.update_traces(go.Line(y=[]))
     else:
         sample_rate, audio_data = audio_data
         plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data))/sample_rate))
-    return gr.Plot.update(plot)
 
-
-# plot_data for use in .change for audio file
-def plot_file_data(audio_data):
-    return plot_data(audio_data, audio_source='file_data')
-
-
-# plot_data for use in .change for audio file
-def plot_mic_data(audio_data):
-    return plot_data(audio_data, audio_source='mic_data')
+    return [gr.Plot.update(plot), [sample_rate, audio_data]]
 
 
 # Set visibility of transcription option components when de/selected
@@ -193,12 +176,18 @@ def make_final_header(true_dict, language):
 
 
 with gr.Blocks() as demo:
+    plot = gr.State(px.line(labels={'x':'Time (s)', 'y':''}))
+    file_data = gr.State([1, [0]])
+    mic_data = gr.State([1, [0]])
+
+
     radio = gr.Radio(["Audio File", "Record Audio"], label="Audio Source", value="Audio File")
     with gr.Box():
         audio_file = gr.Audio(interactive=True)
         mic_recording = gr.Audio(source="microphone", visible=False, interactive=True)
 
-    audio_wave = gr.Plot(plot)
+    print(plot.value)
+    audio_wave = gr.Plot(plot.value)
 
     transcription_options = gr.CheckboxGroup(
         list(transcription_options_headers.keys()),
@@ -244,13 +233,28 @@ with gr.Blocks() as demo:
     ####################################### Functionality ######################################################
 
     # Changing audio source changes Audio input component
-    radio.change(fn=change_audio_source, inputs=radio, outputs=[audio_file, mic_recording, audio_wave])
+    radio.change(fn=change_audio_source,
+                 inputs=[
+                     radio,
+                     plot,
+                     file_data,
+                     mic_data],
+                 outputs=[
+                     audio_file,
+                     mic_recording,
+                     audio_wave,
+                     plot])
 
     # Inputting audio updates plot
     #for component in [audio_file, mic_recording]:
     #    getattr(component, 'change')(fn=plot_audio, inputs=component, outputs=audio_wave)
-    audio_file.change(fn=plot_file_data, inputs=audio_file, outputs=audio_wave)
-    mic_recording.change(fn=plot_mic_data, inputs=mic_recording, outputs=audio_wave)
+    audio_file.change(fn=plot_data,
+                      inputs=[audio_file, plot],
+                      outputs=[audio_wave,file_data]
+                      )
+    mic_recording.change(fn=plot_data,
+                         inputs=[mic_recording, plot],
+                         outputs=[audio_wave, mic_data])
 
     # Deselecting Automatic Language Detection shows Language Selector
     transcription_options.change(
