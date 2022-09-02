@@ -4,8 +4,6 @@ import plotly.express as px
 import plotly
 import plotly.graph_objects as go
 
-DICT = {}
-
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
     'Automatic Language Detection': 'language_detection',
@@ -153,8 +151,8 @@ def audint_selected(language, audio_intelligence_selector):
 
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
 def make_true_dict(transcription_options, audio_intelligence_selector, language):
-    global DICT
-
+    print(transcription_options)
+    print(audio_intelligence_selector)
     aai_tran_keys = [transcription_options_headers[elt] for elt in transcription_options]
     aai_audint_keys = [audio_intelligence_headers[elt] for elt in audio_intelligence_selector]
 
@@ -163,7 +161,7 @@ def make_true_dict(transcription_options, audio_intelligence_selector, language)
 
     combined = {**aai_tran_dict, **aai_audint_dict}
     final_header = make_final_header(combined, language)
-    DICT = final_header
+    return final_header
 
 
 # Takes in a dictionary of AAI API options and adds all required other kwargs
@@ -179,6 +177,17 @@ with gr.Blocks() as demo:
     plot = gr.State(px.line(labels={'x':'Time (s)', 'y':''}))
     file_data = gr.State([1, [0]])
     mic_data = gr.State([1, [0]])
+
+    # Options that the user wants
+    #selected_tran_opts = gr.State([])
+    #selected_audint_opts = gr.State([])
+
+    # Current options = selected options - unavailable for specified language
+    #current_tran_opts = gr.State([])
+    #current_audint_opts = gr.State([])
+
+    # Dictionary for selected items
+    selected_opts = gr.State({})
 
 
     radio = gr.Radio(["Audio File", "Record Audio"], label="Audio Source", value="Audio File")
