@@ -1,5 +1,7 @@
 import requests
 import time
+from scipy.io.wavfile import read, write
+import io
 
 upload_endpoint = "https://api.assemblyai.com/v2/upload"
 transcript_endpoint = "https://api.assemblyai.com/v2/transcript"
@@ -19,6 +21,22 @@ def _read_file(filename, chunk_size=5242880):
             if not data:
                 break
             yield data
+
+
+# Like _read_file but for array - creates temporary unsaved "file" from sample rate and audio np.array
+def _read_array(audio, chunk_size=5242880):
+    sr, aud = read(audio)
+
+    # Create temporary "file" and write data to it
+    bytes_wav = bytes()
+    temp_file = io.BytesIO(bytes_wav)
+    write(temp_file, sr, aud)
+
+    while True:
+        data = temp_file.read(chunk_size)
+        if not data:
+            break
+        yield data
 
 
 # Uploads a file to AAI servers
