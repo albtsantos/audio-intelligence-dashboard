@@ -1,12 +1,16 @@
+import json
+
 import gradio as gr
 import numpy as np
 import plotly.express as px
 import plotly
 import plotly.graph_objects as go
+import requests
 
 from scipy.io.wavfile import write
 
-from helpers import make_header
+from helpers import make_header, upload_file, request_transcript, make_polling_endpoint, wait_for_completion, \
+    get_paragraphs
 
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
@@ -63,21 +67,14 @@ def change_audio_source(val, plot, file_data=None, mic_data=None):
 
 
 # Function to change saved data and plot it when audio file is input or mic is recorded
-def plot_data(audio_data, plot, radio):
+def plot_data(audio_data, plot):
     if audio_data is None:
-        sample_rate, audio_data = [0, []]
+        sample_rate, audio_data = [0, np.array([])]
         plot.update_traces(go.Line(y=[]))
     else:
         sample_rate, audio_data = audio_data
         plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data))/sample_rate))
 
-
-    if radio == "Audio File":
-        filename = 'file'
-    elif radio == "Record Audio":
-        filename = 'recording'
-
-    write(f'{filename}.wav', len(audio_data), audio_data)
 
     return [gr.Plot.update(plot), [sample_rate, audio_data]]
 
@@ -148,17 +145,41 @@ def audint_selected(language, audio_intelligence_selector):
     return [gr.CheckboxGroup.update(selected_audint_opts), selected_audint_opts]
 
 
-def submit_to_AAI(api_key, transcription_options, audio_intelligence_selector, language):
-    initial_header = make_header(api_key)
+def submit_to_AAI(api_key,
+                  transcription_options,
+                  audio_intelligence_selector,
+                  language,
+                  radio,
+                  audio_file,
+                  mic_recording):
+    header = make_header(api_key)
 
     true_dict = make_true_dict(transcription_options, audio_intelligence_selector)
-    true_dict = {**initial_header, **true_dict}
 
-    final_header, language = make_final_header(true_dict, language)
-    final_header = {**true_dict, **final_header}
+    final_json, language = make_final_json(true_dict, language)
+    final_json = {**true_dict, **final_json}
 
-    print(final_header)
 
+    if radio == "Audio File":
+        audio_data = audio_file
+    elif radio == "Record Audio":
+        audio_data = mic_recording
+
+    upload_url = upload_file(audio_data, header, is_file=False)
+    transcript_response = request_transcript(upload_url, header, **final_json)
+    print(transcript_response)
+    polling_endpoint = make_polling_endpoint(transcript_response)
+    wait_for_completion(polling_endpoint, header)
+
+    r = requests.get(polling_endpoint, headers=header, json=final_json)
+    b = r.json()
+    print(json.dumps(b, indent=4, separators=(',', ':')))
+
+    #TODO Figure out how to parse the data and display it well in Gradio
+    paragraphs = get_paragraphs(polling_endpoint, header)
+
+    endpoints = ["redacted-audio", ]
+    r = []
     return language
 
 
@@ -167,19 +188,22 @@ def make_true_dict(transcription_options, audio_intelligence_selector):
     aai_tran_keys = [transcription_options_headers[elt] for elt in transcription_options]
     aai_audint_keys = [audio_intelligence_headers[elt] for elt in audio_intelligence_selector]
 
-    aai_tran_dict = {key: True for key in aai_tran_keys}
-    aai_audint_dict = {key: True for key in aai_audint_keys}
+    aai_tran_dict = {key: 'true' for key in aai_tran_keys}
+    aai_audint_dict = {key: 'true' for key in aai_audint_keys}
 
     return {**aai_tran_dict, **aai_audint_dict}
 
 
 # Takes in a dictionary of AAI API options and adds all required other kwargs
-def make_final_header(true_dict, language):
+def make_final_json(true_dict, language):
     if 'language_detection' not in true_dict:
         # TODO handle this in a better way
         if language is None:
             language = "US English"
         true_dict = {**true_dict, 'language_code': language_headers[language]}
+    # TODO: Allow selection of PII policies
+    if 'redact_pii' in true_dict:
+        true_dict = {**true_dict, 'redact_pii_policies': ['drug', 'injury', 'person_name']}
     print(true_dict)
     return true_dict, language
 
@@ -274,11 +298,11 @@ with gr.Blocks(css=css) as demo:
     #for component in [audio_file, mic_recording]:
     #    getattr(component, 'change')(fn=plot_audio, inputs=component, outputs=audio_wave)
     audio_file.change(fn=plot_data,
-                      inputs=[audio_file, plot, radio],
+                      inputs=[audio_file, plot],
                       outputs=[audio_wave, file_data]
                       )
     mic_recording.change(fn=plot_data,
-                         inputs=[mic_recording, plot, radio],
+                         inputs=[mic_recording, plot],
                          outputs=[audio_wave, mic_data])
 
     # Deselecting Automatic Language Detection shows Language Selector
@@ -315,7 +339,10 @@ with gr.Blocks(css=css) as demo:
                  inputs=[api_key,
                          transcription_options,
                          audio_intelligence_selector,
-                         language],
+                         language,
+                         radio,
+                         audio_file,
+                         mic_recording],
                  outputs=[language])
 
 demo.launch()
