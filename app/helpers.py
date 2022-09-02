@@ -25,7 +25,7 @@ def _read_file(filename, chunk_size=5242880):
 
 # Like _read_file but for array - creates temporary unsaved "file" from sample rate and audio np.array
 def _read_array(audio, chunk_size=5242880):
-    sr, aud = read(audio)
+    sr, aud = audio
 
     # Create temporary "file" and write data to it
     bytes_wav = bytes()
@@ -40,11 +40,11 @@ def _read_array(audio, chunk_size=5242880):
 
 
 # Uploads a file to AAI servers
-def upload_file(audio_file, header):
+def upload_file(audio_file, header, is_file=True):
     upload_response = requests.post(
         upload_endpoint,
         headers=header,
-        data=_read_file(audio_file)
+        data=_read_file(audio_file) if is_file else _read_array(audio_file)
     )
     if upload_response.status_code != 200:
         upload_response.raise_for_status()
