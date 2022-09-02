@@ -37,12 +37,12 @@ language_headers = {
 }
 
 # Options that the use wants
-selected_tran_opts = []
-selected_audint_opts = []
+#selected_tran_opts = []
+#selected_audint_opts = []
 
 # Current options = selected options - unavailable for specified language
-current_tran_opts = []
-current_audint_opts = []
+#current_tran_opts = []
+#current_audint_opts = []
 
 
 def change_audio_source(val, plot, file_data=None, mic_data=None):
@@ -89,18 +89,17 @@ def set_lang_vis(transcription_options):
 
 
 # Verify which options are used, deselecting unavailable ones
-def option_verif(language, transcription_options, audio_intelligence_selector):
-    global selected_tran_opts
-    global selected_audint_opts
-    global current_tran_opts
-    global current_audint_opts
+def option_verif(language, selected_tran_opts, selected_audint_opts):
 
     not_available_tran, not_available_audint = get_unavailable_opts(language)
 
     current_tran_opts = list(set(selected_tran_opts) - set(not_available_tran))
     current_audint_opts = list(set(selected_audint_opts) - set(not_available_audint))
 
-    return [gr.CheckboxGroup.update(current_tran_opts), gr.CheckboxGroup.update(current_audint_opts)]
+    return [gr.CheckboxGroup.update(current_tran_opts),
+            gr.CheckboxGroup.update(current_audint_opts),
+            current_tran_opts,
+            current_audint_opts]
 
 
 # Get tran/audint opts that are not available by language
@@ -130,23 +129,19 @@ def get_unavailable_opts(language):
 # When selecting new tran option, checks to make sure allowed by language and
 # then adds to selected_tran_opts and updates
 def tran_selected(language, transcription_options):
-    global selected_tran_opts
-
     unavailable, _ = get_unavailable_opts(language)
     selected_tran_opts = list(set(transcription_options) - set(unavailable))
 
-    return gr.CheckboxGroup.update(selected_tran_opts)
+    return [gr.CheckboxGroup.update(selected_tran_opts), selected_tran_opts]
 
 
 # When selecting new audint option, checks to make sure allowed by language and
 # then adds to selected_audint_opts and updates
 def audint_selected(language, audio_intelligence_selector):
-    global selected_audint_opts
-
     _, unavailable = get_unavailable_opts(language)
     selected_audint_opts = list(set(audio_intelligence_selector) - set(unavailable))
 
-    return gr.CheckboxGroup.update(selected_audint_opts)
+    return [gr.CheckboxGroup.update(selected_audint_opts), selected_audint_opts]
 
 
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
@@ -169,6 +164,7 @@ def make_final_header(true_dict, language):
         if language is None:
             language = "US English"
         true_dict = {**true_dict, 'language_code': language_headers[language]}
+    print(true_dict)
     return true_dict, language
 
 
@@ -180,12 +176,12 @@ with gr.Blocks() as demo:
     mic_data = gr.State([1, [0]])
 
     # Options that the user wants
-    #selected_tran_opts = gr.State([])
-    #selected_audint_opts = gr.State([])
+    selected_tran_opts = gr.State([])
+    selected_audint_opts = gr.State([])
 
     # Current options = selected options - unavailable for specified language
-    #current_tran_opts = gr.State([])
-    #current_audint_opts = gr.State([])
+    current_tran_opts = gr.State([])
+    current_audint_opts = gr.State([])
 
     # Dictionary for selected items
     selected_opts = gr.State({})
@@ -275,15 +271,17 @@ with gr.Blocks() as demo:
     # Changing language deselects certain Tran / Audio Intelligence options
     language.change(
         fn=option_verif,
-        inputs=[language, transcription_options, audio_intelligence_selector],
-        outputs=[transcription_options, audio_intelligence_selector]
+        inputs=[language,
+                selected_tran_opts,
+                selected_audint_opts],
+        outputs=[transcription_options, audio_intelligence_selector, current_tran_opts, current_audint_opts]
     )
 
     # Selecting Tran options adds it to selected if language allows it
     transcription_options.change(
         fn=tran_selected,
         inputs=[language, transcription_options],
-        outputs=transcription_options
+        outputs=[transcription_options, selected_tran_opts]
     )
 
 
@@ -291,7 +289,7 @@ with gr.Blocks() as demo:
     audio_intelligence_selector.change(
         fn=audint_selected,
         inputs=[language, audio_intelligence_selector],
-        outputs=audio_intelligence_selector
+        outputs=[audio_intelligence_selector, selected_audint_opts]
     )
 
     submit.click(fn=make_true_dict,
