@@ -151,8 +151,6 @@ def audint_selected(language, audio_intelligence_selector):
 
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
 def make_true_dict(transcription_options, audio_intelligence_selector, language):
-    print(transcription_options)
-    print(audio_intelligence_selector)
     aai_tran_keys = [transcription_options_headers[elt] for elt in transcription_options]
     aai_audint_keys = [audio_intelligence_headers[elt] for elt in audio_intelligence_selector]
 
@@ -160,15 +158,18 @@ def make_true_dict(transcription_options, audio_intelligence_selector, language)
     aai_audint_dict = {key: True for key in aai_audint_keys}
 
     combined = {**aai_tran_dict, **aai_audint_dict}
-    final_header = make_final_header(combined, language)
-    return final_header
+    final_header, language = make_final_header(combined, language)
+    return final_header, language
 
 
 # Takes in a dictionary of AAI API options and adds all required other kwargs
 def make_final_header(true_dict, language):
     if 'language_detection' not in true_dict:
+        # TODO handle this in a better way
+        if language is None:
+            language = "US English"
         true_dict = {**true_dict, 'language_code': language_headers[language]}
-    return true_dict
+    return true_dict, language
 
 
 
@@ -297,6 +298,6 @@ with gr.Blocks() as demo:
                  inputs=[transcription_options,
                          audio_intelligence_selector,
                          language],
-                 outputs=None)
+                 outputs=[selected_opts, language])
 
 demo.launch()
