@@ -4,6 +4,10 @@ import plotly.express as px
 import plotly
 import plotly.graph_objects as go
 
+from scipy.io.wavfile import write
+
+from helpers import make_header
+
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
     'Automatic Language Detection': 'language_detection',
@@ -36,14 +40,6 @@ language_headers = {
     'Japanese': 'jp',
 }
 
-# Options that the use wants
-#selected_tran_opts = []
-#selected_audint_opts = []
-
-# Current options = selected options - unavailable for specified language
-#current_tran_opts = []
-#current_audint_opts = []
-
 
 def change_audio_source(val, plot, file_data=None, mic_data=None):
     plot.update_traces(go.Line(y=[]))
@@ -67,13 +63,21 @@ def change_audio_source(val, plot, file_data=None, mic_data=None):
 
 
 # Function to change saved data and plot it when audio file is input or mic is recorded
-def plot_data(audio_data, plot):
+def plot_data(audio_data, plot, radio):
     if audio_data is None:
-        audio_data = [1, [0]]
+        sample_rate, audio_data = [0, []]
         plot.update_traces(go.Line(y=[]))
     else:
         sample_rate, audio_data = audio_data
         plot.update_traces(go.Line(y=audio_data, x=np.arange(len(audio_data))/sample_rate))
+
+
+    if radio == "Audio File":
+        filename = 'file'
+    elif radio == "Record Audio":
+        filename = 'recording'
+
+    write(f'{filename}.wav', len(audio_data), audio_data)
 
     return [gr.Plot.update(plot), [sample_rate, audio_data]]
 
@@ -144,17 +148,29 @@ def audint_selected(language, audio_intelligence_selector):
     return [gr.CheckboxGroup.update(selected_audint_opts), selected_audint_opts]
 
 
+def submit_to_AAI(api_key, transcription_options, audio_intelligence_selector, language):
+    initial_header = make_header(api_key)
+
+    true_dict = make_true_dict(transcription_options, audio_intelligence_selector)
+    true_dict = {**initial_header, **true_dict}
+
+    final_header, language = make_final_header(true_dict, language)
+    final_header = {**true_dict, **final_header}
+
+    print(final_header)
+
+    return language
+
+
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
-def make_true_dict(transcription_options, audio_intelligence_selector, language):
+def make_true_dict(transcription_options, audio_intelligence_selector):
     aai_tran_keys = [transcription_options_headers[elt] for elt in transcription_options]
     aai_audint_keys = [audio_intelligence_headers[elt] for elt in audio_intelligence_selector]
 
     aai_tran_dict = {key: True for key in aai_tran_keys}
     aai_audint_dict = {key: True for key in aai_audint_keys}
 
-    combined = {**aai_tran_dict, **aai_audint_dict}
-    final_header, language = make_final_header(combined, language)
-    return final_header, language
+    return {**aai_tran_dict, **aai_audint_dict}
 
 
 # Takes in a dictionary of AAI API options and adds all required other kwargs
@@ -168,9 +184,15 @@ def make_final_header(true_dict, language):
     return true_dict, language
 
 
+css = """
+#pw {
+    -webkit-text-security: disc;
+}
+"""
 
+with gr.Blocks(css=css) as demo:
+    api_key = gr.Textbox(label="", elem_id="pw")
 
-with gr.Blocks() as demo:
     plot = gr.State(px.line(labels={'x':'Time (s)', 'y':''}))
     file_data = gr.State([1, [0]])
     mic_data = gr.State([1, [0]])
@@ -184,7 +206,7 @@ with gr.Blocks() as demo:
     current_audint_opts = gr.State([])
 
     # Dictionary for selected items
-    selected_opts = gr.State({})
+    final_header = gr.State({})
 
 
     radio = gr.Radio(["Audio File", "Record Audio"], label="Audio Source", value="Audio File")
@@ -233,9 +255,6 @@ with gr.Blocks() as demo:
     with gr.Tab('Summary'):
         gr.Textbox("Your transcription will appear here ...", interactive=True)
 
-
-
-
     ####################################### Functionality ######################################################
 
     # Changing audio source changes Audio input component
@@ -255,11 +274,11 @@ with gr.Blocks() as demo:
     #for component in [audio_file, mic_recording]:
     #    getattr(component, 'change')(fn=plot_audio, inputs=component, outputs=audio_wave)
     audio_file.change(fn=plot_data,
-                      inputs=[audio_file, plot],
-                      outputs=[audio_wave,file_data]
+                      inputs=[audio_file, plot, radio],
+                      outputs=[audio_wave, file_data]
                       )
     mic_recording.change(fn=plot_data,
-                         inputs=[mic_recording, plot],
+                         inputs=[mic_recording, plot, radio],
                          outputs=[audio_wave, mic_data])
 
     # Deselecting Automatic Language Detection shows Language Selector
@@ -292,10 +311,11 @@ with gr.Blocks() as demo:
         outputs=[audio_intelligence_selector, selected_audint_opts]
     )
 
-    submit.click(fn=make_true_dict,
-                 inputs=[transcription_options,
+    submit.click(fn=submit_to_AAI,
+                 inputs=[api_key,
+                         transcription_options,
                          audio_intelligence_selector,
                          language],
-                 outputs=[selected_opts, language])
+                 outputs=[language])
 
 demo.launch()
