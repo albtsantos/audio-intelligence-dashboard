@@ -1,3 +1,5 @@
+import re
+
 import requests
 import time
 from scipy.io.wavfile import read, write
@@ -126,6 +128,11 @@ def get_paragraphs(polling_endpoint, header):
     return paragraphs
 
 
+def _split_on_capital(string):
+    """Adds spaces between capitalized words of a string"""
+    return ' '.join(re.findall("[A-Z][^A-Z]*", string))
+
+
 def _make_tree(c, ukey=''):
     '''
     Given a list whose elements are topics or lists of topics, generated a JSON-esque dictionary tree of topics and
@@ -178,13 +185,13 @@ def _make_html_tree(dic, level=0, HTML = ''):
         if type(dic[key]) == dict:
             if None in dic[key].keys():
                 del dic[key][None]
-                HTML += f'<p class="topic-L{level} istopic">{key}</p>'
+                HTML += f'<p class="topic-L{level} istopic">{_split_on_capital(key)}</p>'
             else:
-                HTML += f'<p class="topic-L{level}">{key}</p>'
+                HTML += f'<p class="topic-L{level}">{_split_on_capital(key)}</p>'
 
             HTML = _make_html_tree(dic[key], level=level+1, HTML=HTML)
         else:
-            HTML += f'<p class="topic-L{level} istopic">{key}</p>'
+            HTML += f'<p class="topic-L{level} istopic">{_split_on_capital(key)}</p>'
     return HTML
 
 def _make_html_body(dic):
