@@ -10,7 +10,7 @@ import requests
 from scipy.io.wavfile import write
 
 from helpers import make_header, upload_file, request_transcript, make_polling_endpoint, wait_for_completion, \
-    get_paragraphs
+    get_paragraphs, make_html_from_topics
 
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
@@ -152,7 +152,8 @@ def submit_to_AAI(api_key,
                   radio,
                   audio_file,
                   mic_recording):
-    header = make_header(api_key)
+    # comment out when want to full test, for now just loading json response
+    '''header = make_header(api_key)
 
     true_dict = make_true_dict(transcription_options, audio_intelligence_selector)
 
@@ -172,15 +173,23 @@ def submit_to_AAI(api_key,
     wait_for_completion(polling_endpoint, header)
 
     r = requests.get(polling_endpoint, headers=header, json=final_json)
-    b = r.json()
-    print(json.dumps(b, indent=4, separators=(',', ':')))
+    '''
+    with open('../response.json', 'r') as f:
+        j = json.load(f)
+    #print(json.dumps(j, indent=4, separators=(',', ':')))
+
+    topics = j['iab_categories_result']['summary']
+
+    html = make_html_from_topics(topics)
+
+    print(html)
 
     #TODO Figure out how to parse the data and display it well in Gradio
-    paragraphs = get_paragraphs(polling_endpoint, header)
+    #paragraphs = get_paragraphs(polling_endpoint, header)
 
-    endpoints = ["redacted-audio", ]
-    r = []
-    return language
+    #endpoints = ["redacted-audio", ]
+    #r = []
+    return [language, html]
 
 
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
@@ -207,8 +216,10 @@ def make_final_json(true_dict, language):
     print(true_dict)
     return true_dict, language
 
+with open('styles.css', 'r') as f:
+    css = f.read()
 
-css = """
+css += """
 #pw {
     -webkit-text-security: disc;
 }
@@ -273,11 +284,13 @@ with gr.Blocks(css=css) as demo:
     #    '0': '#FFFFFF', '1' : '#FF00FF', '2': '#FF0F0F'})
 
     with gr.Tab('Transcription'):
-        gr.Textbox(placeholder="Your transcription will appear here ...", lines=5, max_lines=25)
+        trans_tab = gr.Textbox(placeholder="Your transcription will appear here ...", lines=5, max_lines=25)
     with gr.Tab('Auto Highlights'):
         gr.Textbox("Your transcription will appear here ...", interactive=True)
     with gr.Tab('Summary'):
         gr.Textbox("Your transcription will appear here ...", interactive=True)
+    with gr.Tab("Detected Topics"):
+        topics_tab = gr.HTML()
 
     ####################################### Functionality ######################################################
 
@@ -343,6 +356,6 @@ with gr.Blocks(css=css) as demo:
                          radio,
                          audio_file,
                          mic_recording],
-                 outputs=[language])
+                 outputs=[language, topics_tab])
 
 demo.launch()

@@ -124,3 +124,106 @@ def get_paragraphs(polling_endpoint, header):
         paragraphs.append(para)
 
     return paragraphs
+
+
+def _make_tree(c, ukey=''):
+    '''
+    Given a list whose elements are topics or lists of topics, generated a JSON-esque dictionary tree of topics and
+    subtopics
+    
+    :param c: List of categories 
+    :param ukey: Name of key for which value is key
+    :return: Dictionary of tree structure
+    '''
+    # Create empty dict for current sublist
+    d = dict()
+    # If leaf, return None (alternative behavior: get rid of ukey and return None for if c is None)
+    if c is None and ukey is None:
+        return None
+    elif c is None:
+        return {None: None}
+    else:
+        for n, i in enumerate(c):
+            # For topics with sublist e.g. if ['NewsAndPolitics' 'Politics'] and ['NewsAndPolitics' 'Politics', 'Elections] are both in list - need way to signify politics itself included
+            if i is None:
+                d[None] = None
+            # If next subtopic not in dict, add it. If the remaining list empty, make value None
+            elif i[0] not in d.keys():
+                topic = i.pop(0)
+                d[topic] = None if i == [] else [i]
+            # If subtopic already in dict
+            else:
+                # If the value for this subtopic is only None (i.e. subject itself is a leaf), then append sublist
+                if d[i[0]] is None:
+                    d[i[0]] = [None, i[1:]]
+                # If value for this subtopic is a list itself, then append the remaining list
+                else:
+                    d[i[0]].append(i[1:])
+        # Recurse on remaining leaves
+        for key in d:
+            d[key] = _make_tree(d[key], key)
+    return d
+
+
+def _make_html_tree(dic, level=0, HTML = ''):
+    """
+    Generates an HTML tree from an output of _make_tree
+    :param dic: 
+    :param level: 
+    :param HTML: 
+    :return: 
+    """
+    for key in dic:
+        # Add the topic to HTML, specifying the current level and whether or not it is a topic
+        if type(dic[key]) == dict:
+            if None in dic[key].keys():
+                del dic[key][None]
+                HTML += f'<p class="topic-L{level} istopic">{key}</p>'
+            else:
+                HTML += f'<p class="topic-L{level}">{key}</p>'
+
+            HTML = _make_html_tree(dic[key], level=level+1, HTML=HTML)
+        else:
+            HTML += f'<p class="topic-L{level} istopic">{key}</p>'
+    return HTML
+
+def _make_html_body(dic):
+    """Makes an HTML body from an output of _make_tree"""
+    HTML = '<body>'
+    HTML += '<p class="detected-topics">Detected Topics</p>'
+    HTML += _make_html_tree(dic)
+    HTML += "</body>"
+    return HTML
+
+
+def _make_html(dic):
+    """Makes a full HTML document from an output of _make_tree using styles.css styling"""
+    HTML = '<!DOCTYPE html>' \
+       '<html>' \
+       '<head>' \
+       '<title>Another simple example</title>' \
+       '<link rel="stylesheet" type="text/css" href="styles.css"/>' \
+       '</head>'
+    HTML += _make_html_body(dic)
+    HTML += "</html>"
+    return HTML
+
+
+#make_html_from_topics(j['iab_categories_result']['summary'])
+def make_html_from_topics(dic, threshold=0.0):
+    """Given a topics dictionary from AAI Topic Detection API, generates a structured HTML page from it"""
+    # Filter low probab items out
+    dic = {k:v for k,v in dic.items() if float(v) >= threshold}
+
+    # Get list of remaining topics
+    cats = list(dic.keys())
+
+    # Sort remaining topics
+    cats.sort()
+
+    # Split items into lists
+    cats = [i.split(">") for i in cats]
+
+    tree = _make_tree(cats)
+
+    return _make_html(tree)
