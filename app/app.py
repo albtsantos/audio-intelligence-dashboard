@@ -216,14 +216,10 @@ def make_final_json(true_dict, language):
     print(true_dict)
     return true_dict, language
 
+
 with open('styles.css', 'r') as f:
     css = f.read()
 
-css += """
-#pw {
-    -webkit-text-security: disc;
-}
-"""
 
 with gr.Blocks(css=css) as demo:
     api_key = gr.Textbox(label="", elem_id="pw")
