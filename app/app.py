@@ -222,6 +222,8 @@ with open('styles.css', 'r') as f:
 
 
 with gr.Blocks(css=css) as demo:
+    gr.HTML('<img src="file/images/logo.png">')
+
     api_key = gr.Textbox(label="", elem_id="pw")
 
     plot = gr.State(px.line(labels={'x':'Time (s)', 'y':''}))
