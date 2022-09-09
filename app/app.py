@@ -10,7 +10,7 @@ import requests
 from scipy.io.wavfile import write
 
 from helpers import make_header, upload_file, request_transcript, make_polling_endpoint, wait_for_completion, \
-    get_paragraphs, make_html_from_topics, make_paras_string, create_highlighted_list
+    get_paragraphs, make_html_from_topics, make_paras_string, create_highlighted_list, make_summary
 
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
@@ -180,6 +180,7 @@ def submit_to_AAI(api_key,
         j = json.load(f)
     #print(json.dumps(j, indent=4, separators=(',', ':')))
 
+    # TOPIC DETECTION
     topics = j['iab_categories_result']['summary']
     html = make_html_from_topics(topics)
 
@@ -191,16 +192,19 @@ def submit_to_AAI(api_key,
     with open("../paras.txt", 'r') as f:
         paras = f.read()
 
+    # HIGHLIGHTS
     highlight_dict = create_highlighted_list(paras, j['auto_highlights_result']['results'])
 
-    print(html)
+    # SUMMARIZATION'
+    chapters = j['chapters']
+    summary_html = make_summary(chapters)
 
     #TODO Figure out how to parse the data and display it well in Gradio
     #paragraphs = get_paragraphs(polling_endpoint, header)
 
     #endpoints = ["redacted-audio", ]
     #r = []
-    return [language, html, highlight_dict]
+    return [language, html, highlight_dict, summary_html]
 
 
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
@@ -297,7 +301,7 @@ with gr.Blocks(css=css) as demo:
     with gr.Tab('Auto Highlights'):
         highlights = gr.HighlightedText()
     with gr.Tab('Summary'):
-        gr.Textbox("Your transcription will appear here ...", interactive=True)
+        summary_tab = gr.HTML()
     with gr.Tab("Detected Topics"):
         topics_tab = gr.HTML()
 
@@ -365,6 +369,9 @@ with gr.Blocks(css=css) as demo:
                          radio,
                          audio_file,
                          mic_recording],
-                 outputs=[language, topics_tab, highlights])
+                 outputs=[language,
+                          topics_tab,
+                          highlights,
+                          summary_tab])
 
-demo.launch(share=True)
+demo.launch() #share=True

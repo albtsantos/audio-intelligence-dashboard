@@ -282,3 +282,15 @@ def create_highlighted_list(paragraphs_string, highlights_result, rank=0):
     highlight_dict['entities'] = sorted(highlight_dict['entities'], key= lambda x: x['start'])
 
     return highlight_dict
+
+
+def make_summary(chapters):
+    """input = response.json()['chapters']"""
+    html = "<div>"
+    for chapter in chapters:
+        html += "<details>" \
+                f"<summary>{chapter['headline']}</summary>" \
+                f"{chapter['summary']}" \
+                "</details>"
+    html += "</div>"
+    return html
