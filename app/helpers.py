@@ -234,3 +234,51 @@ def make_html_from_topics(dic, threshold=0.0):
     tree = _make_tree(cats)
 
     return _make_html(tree)
+
+
+
+def make_paras_string(paragraphs):
+    '''input = response.json()['paragraphs'] from aai paragraphs endpoint'''
+    paras = [i['text'] for i in paragraphs]
+    paras = paras + paras
+    paras = '\n\n'.join(paras)
+    return paras
+
+
+def create_highlighted_list(paragraphs_string, highlights_result, rank=0):
+    """Creates list for argument `gr.HighlightedText()`"""
+    # Max and min opacities to highlight to
+    MAX_HIGHLIGHT = 1
+    MIN_HIGHLIGHT = 0.25
+
+    # Filter list for everything above the input rank
+    highlights_result = [i for i in highlights_result if i['rank'] >= rank]
+
+    # Get max/min ranks and find scale/shift we'll need so ranks are mapped to [MIN_HIGHLIGHT, MAX_HIGHLIGHT]
+    max_rank = max([i['rank'] for i in highlights_result])
+    min_rank = min([i['rank'] for i in highlights_result])
+    scale = (MAX_HIGHLIGHT-MIN_HIGHLIGHT)/(max_rank-min_rank)
+    shift = (MAX_HIGHLIGHT-max_rank*scale)
+
+    # Isolate only highlight text and rank
+    highlights_result = [(i['text'], i['rank']) for i in highlights_result]
+
+    entities = []
+    for highlight, rank in highlights_result:
+        # For each highlight, find all starting character instances
+        starts = [c.start() for c in re.finditer(highlight, paragraphs_string)]
+        # Create list of locations for this highlight with entity value (highlight opacity) scaled properly
+        # TODO: REPLACE WITH LIST COMPREHENSION
+        e = [{"entity": rank*scale+shift,
+              "start": start,
+              "end": start + len(highlight)}
+              for start in starts]
+        entities += e
+
+    # Create dictionary
+    highlight_dict = {"text": paragraphs_string, "entities": entities}
+
+    # Sort entities by start char - a bug in Gradio
+    highlight_dict['entities'] = sorted(highlight_dict['entities'], key= lambda x: x['start'])
+
+    return highlight_dict

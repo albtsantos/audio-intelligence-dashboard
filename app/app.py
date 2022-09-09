@@ -10,7 +10,7 @@ import requests
 from scipy.io.wavfile import write
 
 from helpers import make_header, upload_file, request_transcript, make_polling_endpoint, wait_for_completion, \
-    get_paragraphs, make_html_from_topics
+    get_paragraphs, make_html_from_topics, make_paras_string, create_highlighted_list
 
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
@@ -153,7 +153,9 @@ def submit_to_AAI(api_key,
                   audio_file,
                   mic_recording):
     # comment out when want to full test, for now just loading json response
-    '''header = make_header(api_key)
+    '''
+    header = make_header(api_key)
+
 
     true_dict = make_true_dict(transcription_options, audio_intelligence_selector)
 
@@ -179,8 +181,17 @@ def submit_to_AAI(api_key,
     #print(json.dumps(j, indent=4, separators=(',', ':')))
 
     topics = j['iab_categories_result']['summary']
-
     html = make_html_from_topics(topics)
+
+    #endpoint = f"https://api.assemblyai.com/v2/transcript/{j['id']}/paragraphs"
+    #highlights = requests.get(endpoint, headers=header)
+    #highlights = highlights.json()['paragraphs']
+    #paras = make_paras_string(highlights)
+    # Load from file instead so dont have to use aai key
+    with open("../paras.txt", 'r') as f:
+        paras = f.read()
+
+    highlight_dict = create_highlighted_list(paras, j['auto_highlights_result']['results'])
 
     print(html)
 
@@ -189,7 +200,7 @@ def submit_to_AAI(api_key,
 
     #endpoints = ["redacted-audio", ]
     #r = []
-    return [language, html]
+    return [language, html, highlight_dict]
 
 
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
@@ -284,7 +295,7 @@ with gr.Blocks(css=css) as demo:
     with gr.Tab('Transcription'):
         trans_tab = gr.Textbox(placeholder="Your transcription will appear here ...", lines=5, max_lines=25)
     with gr.Tab('Auto Highlights'):
-        gr.Textbox("Your transcription will appear here ...", interactive=True)
+        highlights = gr.HighlightedText()
     with gr.Tab('Summary'):
         gr.Textbox("Your transcription will appear here ...", interactive=True)
     with gr.Tab("Detected Topics"):
@@ -354,6 +365,6 @@ with gr.Blocks(css=css) as demo:
                          radio,
                          audio_file,
                          mic_recording],
-                 outputs=[language, topics_tab])
+                 outputs=[language, topics_tab, highlights])
 
-demo.launch()
+demo.launch(share=True)
