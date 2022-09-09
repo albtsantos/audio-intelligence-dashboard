@@ -1,0 +1,440 @@
+{
+  "id": "owke4eku0d-8ac7-4729-bdb9-1a42fcf6f70b",
+  "language_model": "assemblyai_default",
+  "acoustic_model": "assemblyai_default",
+  "language_code": "en_us",
+  "status": "completed",
+  "audio_url": "https://cdn.assemblyai.com/upload/42bef839-18c7-4252-9fec-0ea53075d633",
+  "text": "Four score and seven years ago our fathers brought forth on this continent a new nation conceived in liberty and dedicated to the proposition that all men are created equal.",
+  "words": [
+    {
+      "text": "Four",
+      "start": 430,
+      "end": 666,
+      "confidence": 0.7,
+      "speaker": null
+    },
+    {
+      "text": "score",
+      "start": 728,
+      "end": 1054,
+      "confidence": 0.48731,
+      "speaker": null
+    },
+    {
+      "text": "and",
+      "start": 1102,
+      "end": 1314,
+      "confidence": 0.61,
+      "speaker": null
+    },
+    {
+      "text": "seven",
+      "start": 1352,
+      "end": 1554,
+      "confidence": 1.0,
+      "speaker": null
+    },
+    {
+      "text": "years",
+      "start": 1592,
+      "end": 1794,
+      "confidence": 0.9989,
+      "speaker": null
+    },
+    {
+      "text": "ago",
+      "start": 1832,
+      "end": 2250,
+      "confidence": 0.99921,
+      "speaker": null
+    },
+    {
+      "text": "our",
+      "start": 2360,
+      "end": 2634,
+      "confidence": 0.99877,
+      "speaker": null
+    },
+    {
+      "text": "fathers",
+      "start": 2672,
+      "end": 3118,
+      "confidence": 0.86841,
+      "speaker": null
+    },
+    {
+      "text": "brought",
+      "start": 3154,
+      "end": 3358,
+      "confidence": 0.67614,
+      "speaker": null
+    },
+    {
+      "text": "forth",
+      "start": 3394,
+      "end": 3658,
+      "confidence": 0.71126,
+      "speaker": null
+    },
+    {
+      "text": "on",
+      "start": 3694,
+      "end": 3858,
+      "confidence": 0.99547,
+      "speaker": null
+    },
+    {
+      "text": "this",
+      "start": 3884,
+      "end": 4038,
+      "confidence": 1.0,
+      "speaker": null
+    },
+    {
+      "text": "continent",
+      "start": 4064,
+      "end": 4510,
+      "confidence": 0.9836,
+      "speaker": null
+    },
+    {
+      "text": "a",
+      "start": 4570,
+      "end": 4722,
+      "confidence": 0.7,
+      "speaker": null
+    },
+    {
+      "text": "new",
+      "start": 4736,
+      "end": 4914,
+      "confidence": 1.0,
+      "speaker": null
+    },
+    {
+      "text": "nation",
+      "start": 4952,
+      "end": 5446,
+      "confidence": 0.99757,
+      "speaker": null
+    },
+    {
+      "text": "conceived",
+      "start": 5578,
+      "end": 6082,
+      "confidence": 0.48767,
+      "speaker": null
+    },
+    {
+      "text": "in",
+      "start": 6106,
+      "end": 6222,
+      "confidence": 0.96822,
+      "speaker": null
+    },
+    {
+      "text": "liberty",
+      "start": 6236,
+      "end": 6610,
+      "confidence": 0.99484,
+      "speaker": null
+    },
+    {
+      "text": "and",
+      "start": 6670,
+      "end": 6858,
+      "confidence": 0.99,
+      "speaker": null
+    },
+    {
+      "text": "dedicated",
+      "start": 6884,
+      "end": 7258,
+      "confidence": 0.94249,
+      "speaker": null
+    },
+    {
+      "text": "to",
+      "start": 7294,
+      "end": 7422,
+      "confidence": 0.51,
+      "speaker": null
+    },
+    {
+      "text": "the",
+      "start": 7436,
+      "end": 7578,
+      "confidence": 0.62,
+      "speaker": null
+    },
+    {
+      "text": "proposition",
+      "start": 7604,
+      "end": 8074,
+      "confidence": 0.99901,
+      "speaker": null
+    },
+    {
+      "text": "that",
+      "start": 8122,
+      "end": 8334,
+      "confidence": 0.97,
+      "speaker": null
+    },
+    {
+      "text": "all",
+      "start": 8372,
+      "end": 8574,
+      "confidence": 0.9985,
+      "speaker": null
+    },
+    {
+      "text": "men",
+      "start": 8612,
+      "end": 8850,
+      "confidence": 0.99942,
+      "speaker": null
+    },
+    {
+      "text": "are",
+      "start": 8900,
+      "end": 9078,
+      "confidence": 0.99753,
+      "speaker": null
+    },
+    {
+      "text": "created",
+      "start": 9104,
+      "end": 9478,
+      "confidence": 0.73732,
+      "speaker": null
+    },
+    {
+      "text": "equal.",
+      "start": 9514,
+      "end": 9790,
+      "confidence": 0.50181,
+      "speaker": null
+    }
+  ],
+  "utterances": null,
+  "confidence": 0.848115,
+  "audio_duration": 10,
+  "punctuate": true,
+  "format_text": true,
+  "dual_channel": null,
+  "webhook_url": null,
+  "webhook_status_code": null,
+  "webhook_auth": false,
+  "webhook_auth_header_name": null,
+  "speed_boost": false,
+  "auto_highlights_result": {
+    "status": "success",
+    "results": [
+      {
+        "count": 1,
+        "rank": 0.13,
+        "text": "liberty",
+        "timestamps": [
+          {
+            "start": 6236,
+            "end": 6610
+          }
+        ]
+      },
+      {
+        "count": 1,
+        "rank": 0.11,
+        "text": "new nation",
+        "timestamps": [
+          {
+            "start": 4736,
+            "end": 5446
+          }
+        ]
+      },
+      {
+        "count": 1,
+        "rank": 0.08,
+        "text": "fathers",
+        "timestamps": [
+          {
+            "start": 2672,
+            "end": 3118
+          }
+        ]
+      },
+      {
+        "count": 1,
+        "rank": 0.08,
+        "text": "all men",
+        "timestamps": [
+          {
+            "start": 8372,
+            "end": 8850
+          }
+        ]
+      },
+      {
+        "count": 1,
+        "rank": 0.06,
+        "text": "proposition",
+        "timestamps": [
+          {
+            "start": 7604,
+            "end": 8074
+          }
+        ]
+      },
+      {
+        "count": 1,
+        "rank": 0.06,
+        "text": "continent",
+        "timestamps": [
+          {
+            "start": 4064,
+            "end": 4510
+          }
+        ]
+      },
+      {
+        "count": 1,
+        "rank": 0.06,
+        "text": "seven years ago",
+        "timestamps": [
+          {
+            "start": 1352,
+            "end": 2250
+          }
+        ]
+      }
+    ]
+  },
+  "auto_highlights": true,
+  "audio_start_from": null,
+  "audio_end_at": null,
+  "word_boost": [],
+  "boost_param": null,
+  "filter_profanity": false,
+  "redact_pii": true,
+  "redact_pii_audio": false,
+  "redact_pii_audio_quality": "mp3",
+  "redact_pii_policies": [
+    "drug",
+    "injury",
+    "person_name"
+  ],
+  "redact_pii_sub": "hash",
+  "speaker_labels": false,
+  "content_safety": true,
+  "iab_categories": true,
+  "content_safety_labels": {
+    "status": "success",
+    "results": [],
+    "summary": {},
+    "severity_score_summary": {}
+  },
+  "iab_categories_result": {
+    "status": "success",
+    "results": [
+      {
+        "text": "Four score and seven years ago our fathers brought forth on this continent a new nation conceived in liberty and dedicated to the proposition that all men are created equal.",
+        "labels": [
+          {
+            "relevance": 0.06527332216501236,
+            "label": "Travel>TravelLocations>AfricaTravel"
+          },
+          {
+            "relevance": 0.0471910797059536,
+            "label": "Travel>TravelLocations>EuropeTravel"
+          },
+          {
+            "relevance": 0.014725906774401665,
+            "label": "NewsAndPolitics>Politics"
+          },
+          {
+            "relevance": 0.011340287514030933,
+            "label": "Religion&Spirituality>Christianity"
+          },
+          {
+            "relevance": 0.006646257359534502,
+            "label": "NewsAndPolitics>Law"
+          },
+          {
+            "relevance": 0.005918613635003567,
+            "label": "EventsAndAttractions>PoliticalEvent"
+          },
+          {
+            "relevance": 0.003337731584906578,
+            "label": "FamilyAndRelationships>MarriageAndCivilUnions"
+          },
+          {
+            "relevance": 0.0031102073844522238,
+            "label": "Travel>TravelLocations>NorthAmericaTravel"
+          },
+          {
+            "relevance": 0.0024592645931988955,
+            "label": "NewsAndPolitics>Politics>PoliticalIssues"
+          },
+          {
+            "relevance": 0.001665698830038309,
+            "label": "NewsAndPolitics>Politics>WarAndConflicts"
+          }
+        ],
+        "timestamp": {
+          "start": 430,
+          "end": 9790
+        }
+      }
+    ],
+    "summary": {
+      "Travel>TravelLocations>AfricaTravel": 1.0,
+      "Travel>TravelLocations>EuropeTravel": 0.7229765057563782,
+      "NewsAndPolitics>Politics": 0.22560375928878784,
+      "Religion&Spirituality>Christianity": 0.17373540997505188,
+      "NewsAndPolitics>Law": 0.10182195901870728,
+      "EventsAndAttractions>PoliticalEvent": 0.09067431092262268,
+      "FamilyAndRelationships>MarriageAndCivilUnions": 0.05113469809293747,
+      "Travel>TravelLocations>NorthAmericaTravel": 0.04764898121356964,
+      "NewsAndPolitics>Politics>PoliticalIssues": 0.03767641261219978,
+      "NewsAndPolitics>Politics>WarAndConflicts": 0.025518830865621567,
+      "Travel>TravelLocations>AustraliaAndOceaniaTravel": 0.023581648245453835,
+      "Hobbies&Interests>GenealogyAndAncestry": 0.013975286856293678,
+      "Religion&Spirituality>Judaism": 0.012308650650084019,
+      "NewsAndPolitics>Crime": 0.012244840152561665,
+      "Science>Geography": 0.010910360142588615,
+      "BooksAndLiterature>Biographies": 0.010122659616172314,
+      "Technology&Computing>Computing>Internet": 0.00969504751265049,
+      "PersonalFinance>HomeUtilities>InternetServiceProviders": 0.00960697140544653,
+      "Religion&Spirituality": 0.008793771266937256,
+      "NewsAndPolitics>Politics>Elections": 0.008565575815737247
+    }
+  },
+  "language_detection": false,
+  "custom_spelling": null,
+  "disfluencies": false,
+  "sentiment_analysis": "true",
+  "auto_chapters": "true",
+  "chapters": [
+    {
+      "summary": "Seven years ago, the fathers brought a new nation to this continent.",
+      "headline": "Seven years ago, the fathers brought a new nation to this continent.",
+      "gist": "A new nation.",
+      "start": 430,
+      "end": 9790
+    }
+  ],
+  "sentiment_analysis_results": [
+    {
+      "text": "Four score and seven years ago our fathers brought forth on this continent a new nation conceived in liberty and dedicated to the proposition that all men are created equal.",
+      "start": 430,
+      "end": 9790,
+      "sentiment": "NEUTRAL",
+      "confidence": 0.5246281027793884,
+      "speaker": null
+    }
+  ],
+  "entity_detection": "true",
+  "entities": []
+}
