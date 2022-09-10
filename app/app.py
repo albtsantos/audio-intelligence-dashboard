@@ -10,7 +10,8 @@ import requests
 from scipy.io.wavfile import write
 
 from helpers import make_header, upload_file, request_transcript, make_polling_endpoint, wait_for_completion, \
-    get_paragraphs, make_html_from_topics, make_paras_string, create_highlighted_list, make_summary
+    get_paragraphs, make_html_from_topics, make_paras_string, create_highlighted_list, make_summary, \
+    make_sentiment_output
 
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
@@ -176,6 +177,9 @@ def submit_to_AAI(api_key,
 
     r = requests.get(polling_endpoint, headers=header, json=final_json)
     '''
+
+    # NO
+
     with open('../response.json', 'r') as f:
         j = json.load(f)
     #print(json.dumps(j, indent=4, separators=(',', ':')))
@@ -199,12 +203,17 @@ def submit_to_AAI(api_key,
     chapters = j['chapters']
     summary_html = make_summary(chapters)
 
+    # SENTIMENT
+    sent_results = j['sentiment_analysis_results']
+    sent = make_sentiment_output(sent_results)
+
     #TODO Figure out how to parse the data and display it well in Gradio
     #paragraphs = get_paragraphs(polling_endpoint, header)
 
     #endpoints = ["redacted-audio", ]
     #r = []
-    return [language, html, highlight_dict, summary_html]
+    return [language, html, highlight_dict, summary_html, sent]
+
 
 
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
@@ -227,7 +236,7 @@ def make_final_json(true_dict, language):
         true_dict = {**true_dict, 'language_code': language_headers[language]}
     # TODO: Allow selection of PII policies
     if 'redact_pii' in true_dict:
-        true_dict = {**true_dict, 'redact_pii_policies': ['drug', 'injury', 'person_name']}
+        true_dict = {**true_dict, 'redact_pii_policies': ['drug', 'injury', 'person_name', 'money_amount']}
     print(true_dict)
     return true_dict, language
 
@@ -304,6 +313,8 @@ with gr.Blocks(css=css) as demo:
         summary_tab = gr.HTML()
     with gr.Tab("Detected Topics"):
         topics_tab = gr.HTML()
+    with gr.Tab("Sentiment Analysis"):
+        sentiment_tab = gr.HTML()
 
     ####################################### Functionality ######################################################
 
@@ -372,6 +383,7 @@ with gr.Blocks(css=css) as demo:
                  outputs=[language,
                           topics_tab,
                           highlights,
-                          summary_tab])
+                          summary_tab,
+                          sentiment_tab])
 
 demo.launch() #share=True

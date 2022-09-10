@@ -294,3 +294,24 @@ def make_summary(chapters):
                 "</details>"
     html += "</div>"
     return html
+
+# STUFF FOR SENTIMENT ANALYSIS
+green = "background-color: #159609"
+red = "background-color: #cc0c0c"
+
+
+def to_hex(num, max_opacity=128):
+    return hex(int(max_opacity*num))[2:]
+
+
+def make_sentiment_output(sentiment_analysis_results):
+    p = '<p>'
+    for sentiment in sentiment_analysis_results:
+        if sentiment['sentiment'] == 'POSITIVE':
+            p += f'<mark style="{green+to_hex(sentiment["confidence"])}">' + sentiment['text'] + '</mark> '
+        elif sentiment['sentiment'] == "NEGATIVE":
+            p += f'<mark style="{red+to_hex(sentiment["confidence"])}">' + sentiment['text'] + '</mark> '
+        else:
+            p += sentiment['text']
+    p += "</p>"
+    return p
