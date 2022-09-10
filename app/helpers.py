@@ -315,3 +315,43 @@ def make_sentiment_output(sentiment_analysis_results):
             p += sentiment['text']
     p += "</p>"
     return p
+
+
+# STUFF FOR ENTITY DETECTION
+def make_entity_dict(response, offset=40):
+    """input is response.json()"""
+    entities = response['entities']
+    t = response['text']
+    len_text = len(t)
+
+    d = {}
+    for entity in entities:
+        # Find entity in the text
+        s = t.find(entity['text'])
+        len_entity = len(entity['text'])
+        # Get entity context (colloquial sense)
+        p = t[max(0, s - offset):min(s + len_entity + offset, len_text)]
+        # Make sure start and end with a full word
+        p = '... ' + ' '.join(p.split(' ')[1:-1]) + ' ...'
+        # Add to dict
+        if entity['entity_type'] in d:
+            d[entity['entity_type']] += [[p, entity['text']]]
+        else:
+            d[entity['entity_type']] = [[p, entity['text']]]
+
+    return d
+
+
+def make_entity_html(d, highlight_color="#FFFF0080"):
+    """from entity dict, make HTML"""
+    h = "<ul>"
+    for i in d:
+        h += f'<li>{i}'
+        h += "<ul>"
+        for sent, ent in d[i]:
+            h += f"""<li>{sent.replace(ent, f'<mark style="background-color: {highlight_color}">{ent}</mark>')}</li>"""
+        h += '</ul>'
+        h += '</li>'
+    h += "</ul>"
+    return h
+

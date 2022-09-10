@@ -11,7 +11,7 @@ from scipy.io.wavfile import write
 
 from helpers import make_header, upload_file, request_transcript, make_polling_endpoint, wait_for_completion, \
     get_paragraphs, make_html_from_topics, make_paras_string, create_highlighted_list, make_summary, \
-    make_sentiment_output
+    make_sentiment_output, make_entity_dict, make_entity_html
 
 # Converts Gradio checkboxes to AssemlbyAI header arguments
 transcription_options_headers = {
@@ -207,12 +207,28 @@ def submit_to_AAI(api_key,
     sent_results = j['sentiment_analysis_results']
     sent = make_sentiment_output(sent_results)
 
+    # ENTITY
+    d = make_entity_dict(j)
+    entity_html = make_entity_html(d)
+
+    # CONTENT SAFETY
+    cont = j['content_safety_labels']['summary']
+    d = {'label': [], 'severity': []}
+    for key in cont:
+        d['label'] += [key]
+        d['severity'] += [cont[key]]
+
+    fig = px.bar(d, x='severity', y='label')
+    fig.update_xaxes(range=[0, 1])
+
+
+
     #TODO Figure out how to parse the data and display it well in Gradio
     #paragraphs = get_paragraphs(polling_endpoint, header)
 
     #endpoints = ["redacted-audio", ]
     #r = []
-    return [language, html, highlight_dict, summary_html, sent]
+    return [language, html, highlight_dict, summary_html, sent, entity_html, fig]
 
 
 
@@ -247,6 +263,18 @@ with open('styles.css', 'r') as f:
 
 with gr.Blocks(css=css) as demo:
     gr.HTML('<img src="file/images/logo.png">')
+
+    gr.HTML("<center><p>Audio Intelligence Dashboard</p></center>"
+            "<p>Check out the BLOG NAME blog to learn how to build this dashboard.</p>"
+            "<p>To use: <ol><li>Enter AssemlbyAI API Key - you can get one here for free</li>"
+            "<li>Upload or Record Audio</li>"
+            "<li>Select which options you would like to analyze</li>"
+            "<li>Click 'Submit'</li>"
+            "<li>Review the Results<ol></li></p>"
+            "<p>Note that this is not an official AssemblyAI product and was created for educational purposes</p>")
+
+
+    gr.HTML("<p>API Key:</p>")
 
     api_key = gr.Textbox(label="", elem_id="pw")
 
@@ -315,6 +343,10 @@ with gr.Blocks(css=css) as demo:
         topics_tab = gr.HTML()
     with gr.Tab("Sentiment Analysis"):
         sentiment_tab = gr.HTML()
+    with gr.Tab("Entity Detection"):
+        entity_tab = gr.HTML()
+    with gr.Tab("Content Safety"):
+        content_tab = gr.Plot()
 
     ####################################### Functionality ######################################################
 
@@ -384,6 +416,8 @@ with gr.Blocks(css=css) as demo:
                           topics_tab,
                           highlights,
                           summary_tab,
-                          sentiment_tab])
+                          sentiment_tab,
+                          entity_tab,
+                          content_tab])
 
 demo.launch() #share=True
