@@ -178,23 +178,22 @@ def submit_to_AAI(api_key,
     r = requests.get(polling_endpoint, headers=header, json=final_json)
     '''
 
-    # NO
+    # TRANSCRIPT
+    # endpoint = f"https://api.assemblyai.com/v2/transcript/{j['id']}/paragraphs"
+    # highlights = requests.get(endpoint, headers=header)
+    # highlights = highlights.json()['paragraphs']
+    # paras = make_paras_string(highlights)
+    # Load from file instead so dont have to use aai key
+    with open("../paras.txt", 'r') as f:
+        paras = f.read()
 
     with open('../response.json', 'r') as f:
         j = json.load(f)
     #print(json.dumps(j, indent=4, separators=(',', ':')))
 
-    # TOPIC DETECTION
-    topics = j['iab_categories_result']['summary']
-    topics_html = make_html_from_topics(topics)
 
-    #endpoint = f"https://api.assemblyai.com/v2/transcript/{j['id']}/paragraphs"
-    #highlights = requests.get(endpoint, headers=header)
-    #highlights = highlights.json()['paragraphs']
-    #paras = make_paras_string(highlights)
-    # Load from file instead so dont have to use aai key
-    with open("../paras.txt", 'r') as f:
-        paras = f.read()
+    # DIARIZATION
+    utts = '\n\n\n'.join([f"Speaker {utt['speaker']}:\n\n"+utt['text'] for utt in j['utterances']])
 
     # HIGHLIGHTS
     highlight_dict = create_highlighted_list(paras, j['auto_highlights_result']['results'])
@@ -202,6 +201,10 @@ def submit_to_AAI(api_key,
     # SUMMARIZATION'
     chapters = j['chapters']
     summary_html = make_summary(chapters)
+
+    # TOPIC DETECTION
+    topics = j['iab_categories_result']['summary']
+    topics_html = make_html_from_topics(topics)
 
     # SENTIMENT
     sent_results = j['sentiment_analysis_results']
@@ -221,9 +224,7 @@ def submit_to_AAI(api_key,
     content_fig = px.bar(d, x='severity', y='label')
     content_fig.update_xaxes(range=[0, 1])
 
-    return [language, paras, highlight_dict, summary_html, topics_html, sent, entity_html, content_fig]
-
-
+    return [language, paras, utts, highlight_dict, summary_html, topics_html, sent, entity_html, content_fig]
 
 # Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
 def make_true_dict(transcription_options, audio_intelligence_selector):
@@ -323,11 +324,10 @@ with gr.Blocks(css=css) as demo:
     )
     submit = gr.Button('Submit')
 
-    #gr.HighlightedText(value=[('hello', 1), ('asdasdd', 0), ('asasd', 1), ('asasd', 2)]).style(color_map={
-    #    '0': '#FFFFFF', '1' : '#FF00FF', '2': '#FF0F0F'})
-
-    with gr.Tab('Transcription'):
+    with gr.Tab('Transcript'):
         trans_tab = gr.Textbox(placeholder="Your transcription will appear here ...", lines=5, max_lines=25)
+    with gr.Tab('Speaker Labels'):
+        diarization_tab = gr.Textbox()
     with gr.Tab('Auto Highlights'):
         highlights_tab = gr.HighlightedText()
     with gr.Tab('Summary'):
@@ -407,11 +407,13 @@ with gr.Blocks(css=css) as demo:
                          mic_recording],
                  outputs=[language,
                           trans_tab,
+                          diarization_tab,
                           highlights_tab,
                           summary_tab,
                           topics_tab,
                           sentiment_tab,
                           entity_tab,
                           content_tab])
+
 
 demo.launch() #share=True
