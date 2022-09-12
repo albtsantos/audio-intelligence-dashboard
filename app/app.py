@@ -11,7 +11,9 @@ from scipy.io.wavfile import write
 
 from helpers import make_header, upload_file, request_transcript, make_polling_endpoint, wait_for_completion, \
     get_paragraphs, make_html_from_topics, make_paras_string, create_highlighted_list, make_summary, \
-    make_sentiment_output, make_entity_dict, make_entity_html, make_true_dict
+    make_sentiment_output, make_entity_dict, make_entity_html, make_true_dict, make_final_json, make_content_safety_fig
+
+from helpers import transcription_options_headers, audio_intelligence_headers, language_headers
 
 
 def change_audio_source(val, plot, file_data=None, mic_data=None):
@@ -126,88 +128,78 @@ def submit_to_AAI(api_key,
     # Make request header
     header = make_header(api_key)
 
-    # Create a dictionary
+    # Map transcription/audio intelligence options to AssemblyAI API request JSON dict
     true_dict = make_true_dict(transcription_options, audio_intelligence_selector)
 
+    # TODO: edit makefinaljson
     final_json, language = make_final_json(true_dict, language)
     final_json = {**true_dict, **final_json}
 
-
+    # Select which audio to use
     if radio == "Audio File":
         audio_data = audio_file
     elif radio == "Record Audio":
         audio_data = mic_recording
 
+    # Upload the audio
     upload_url = upload_file(audio_data, header, is_file=False)
+
+    # Request transcript
     transcript_response = request_transcript(upload_url, header, **final_json)
-    print(transcript_response)
+
+    # Wait for the transcription to complete
     polling_endpoint = make_polling_endpoint(transcript_response)
     wait_for_completion(polling_endpoint, header)
 
-    r = requests.get(polling_endpoint, headers=header, json=final_json)
+    # Fetch results JSON
+    r = requests.get(polling_endpoint, headers=header, json=final_json).json()
+
     #'''
 
     # TRANSCRIPT
-    # endpoint = f"https://api.assemblyai.com/v2/transcript/{j['id']}/paragraphs"
-    # paras = requests.get(endpoint, headers=header)
-    # paras = highlights.json()['paragraphs']
-    # paras = make_paras_string(highlights)
+    # Fetch paragraphs of transcript
+    endpoint = f"https://api.assemblyai.com/v2/transcript/{r['id']}/paragraphs"
+    paras = requests.get(endpoint, headers=header)
+    paras = paras.json()['paragraphs']
+
+    # Format properly
+    paras = make_paras_string(paras)
 
     # Load from file instead so dont have to use aai key
     #with open("../paras.txt", 'r') as f:
     #    paras = f.read()
 
     #with open('../response.json', 'r') as f:
-    #    j = json.load(f)
+    #    r = json.load(f)
 
 
     # DIARIZATION
-    utts = '\n\n\n'.join([f"Speaker {utt['speaker']}:\n\n"+utt['text'] for utt in j['utterances']])
+    utts = '\n\n\n'.join([f"Speaker {utt['speaker']}:\n\n"+utt['text'] for utt in r['utterances']])
 
     # HIGHLIGHTS
-    highlight_dict = create_highlighted_list(paras, j['auto_highlights_result']['results'])
+    highlight_dict = create_highlighted_list(paras, r['auto_highlights_result']['results'])
 
     # SUMMARIZATION'
-    chapters = j['chapters']
+    chapters = r['chapters']
     summary_html = make_summary(chapters)
 
     # TOPIC DETECTION
-    topics = j['iab_categories_result']['summary']
+    topics = r['iab_categories_result']['summary']
     topics_html = make_html_from_topics(topics)
 
     # SENTIMENT
-    sent_results = j['sentiment_analysis_results']
+    sent_results = r['sentiment_analysis_results']
     sent = make_sentiment_output(sent_results)
 
     # ENTITY
-    d = make_entity_dict(j)
+    d = make_entity_dict(r)
     entity_html = make_entity_html(d)
 
     # CONTENT SAFETY
-    cont = j['content_safety_labels']['summary']
-    d = {'label': [], 'severity': []}
-    for key in cont:
-        d['label'] += [' '.join(key.split('_')).title()]
-        d['severity'] += [cont[key]]
-
-    content_fig = px.bar(d, x='severity', y='label')
-    content_fig.update_xaxes(range=[0, 1])
+    cont = r['content_safety_labels']['summary']
+    content_fig = make_content_safety_fig(cont)
 
     return [language, paras, utts, highlight_dict, summary_html, topics_html, sent, entity_html, content_fig]
-
-
-# Takes in a dictionary of AAI API options and adds all required other kwargs
-def make_final_json(true_dict, language):
-    if 'language_detection' not in true_dict:
-        # TODO handle this in a better way
-        if language is None:
-            language = "US English"
-        true_dict = {**true_dict, 'language_code': language_headers[language]}
-    # TODO: Allow selection of PII policies
-    if 'redact_pii' in true_dict:
-        true_dict = {**true_dict, 'redact_pii_policies': ['drug', 'injury', 'person_name', 'money_amount']}
-    print(true_dict)
-    return true_dict, language
 
 
 with open('styles.css', 'r') as f:
@@ -215,8 +207,10 @@ with open('styles.css', 'r') as f:
 
 
 with gr.Blocks(css=css) as demo:
+    # Load image
     gr.HTML('<img src="file/images/logo.png">')
 
+    # Load description
     gr.HTML("<center><p>Audio Intelligence Dashboard</p></center>"
             "<p>Check out the BLOG NAME blog to learn how to build this dashboard.</p>"
             "<p>To use: <ol><li>Enter AssemlbyAI API Key - you can get one here for free</li>"
@@ -226,41 +220,45 @@ with gr.Blocks(css=css) as demo:
             "<li>Review the Results<ol></li></p>"
             "<p>Note that this is not an official AssemblyAI product and was created for educational purposes</p>")
 
-
+    # API Key title
     gr.HTML("<p>API Key:</p>")
-
+    # API key textbox (password-style)
     api_key = gr.Textbox(label="", elem_id="pw")
 
+    # Gradio states for - plotly Figure object, audio data for file source, and audio data for mic source
     plot = gr.State(px.line(labels={'x':'Time (s)', 'y':''}))
-    file_data = gr.State([1, [0]])
-    mic_data = gr.State([1, [0]])
+    file_data = gr.State([1, [0]])  # [sample rate, [data]]
+    mic_data = gr.State([1, [0]])  # [Sample rate, [data]]
 
+    # TODO - fix this sequence: - US english - select all AI opts - select "Entity Detection" - go back to US english
+    #   if skip selectiong "Entity Detection" works as expected
     # Options that the user wants
     selected_tran_opts = gr.State([])
     selected_audint_opts = gr.State([])
 
-    # Current options = selected options - unavailable for specified language
+    # Current options = selected options - unavailable options for specified language
     current_tran_opts = gr.State([])
     current_audint_opts = gr.State([])
 
-    # Dictionary for selected items
-    final_header = gr.State({})
-
-
+    # Selector for audio source
     radio = gr.Radio(["Audio File", "Record Audio"], label="Audio Source", value="Audio File")
+
+    # Audio object for both file and microphone data
     with gr.Box():
         audio_file = gr.Audio(interactive=True)
         mic_recording = gr.Audio(source="microphone", visible=False, interactive=True)
 
-    print(plot.value)
+    # Audio wave plot
     audio_wave = gr.Plot(plot.value)
 
+    # Checkbox for transcription options
     transcription_options = gr.CheckboxGroup(
         list(transcription_options_headers.keys()),
         label="Transcription Options",
         value=["Automatic Language Detection"]
     )
 
+    # Warning for using Automatic Language detection
     w = "<div>" \
         "<p>WARNING: Automatic Language Detection not available for Hindi or Japanese. For best results on non-US " \
         "English audio, specify the dialect instead of using Automatic Language Detection</p>" \
@@ -270,19 +268,24 @@ with gr.Blocks(css=css) as demo:
         "</div>"
     auto_lang_detect_warning = gr.HTML(w)
 
+    # Checkbox for Audio Intelligence options
     audio_intelligence_selector = gr.CheckboxGroup(
         list(audio_intelligence_headers.keys()),
         label='Audio Intelligence Options', interactive=True
     )
 
+    # Language selector for manual language selection
     language = gr.Dropdown(
         list(language_headers.keys()),
         label="Language Specification",
         value='US English',
         visible=False,
     )
+
+    # Button to submit audio for processing with selected options
     submit = gr.Button('Submit')
 
+    # Results tab group
     with gr.Tab('Transcript'):
         trans_tab = gr.Textbox(placeholder="Your transcription will appear here ...", lines=5, max_lines=25)
     with gr.Tab('Speaker Labels'):
