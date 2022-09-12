@@ -186,7 +186,7 @@ def submit_to_AAI(api_key,
 
     # TOPIC DETECTION
     topics = j['iab_categories_result']['summary']
-    html = make_html_from_topics(topics)
+    topics_html = make_html_from_topics(topics)
 
     #endpoint = f"https://api.assemblyai.com/v2/transcript/{j['id']}/paragraphs"
     #highlights = requests.get(endpoint, headers=header)
@@ -218,17 +218,10 @@ def submit_to_AAI(api_key,
         d['label'] += [key]
         d['severity'] += [cont[key]]
 
-    fig = px.bar(d, x='severity', y='label')
-    fig.update_xaxes(range=[0, 1])
+    content_fig = px.bar(d, x='severity', y='label')
+    content_fig.update_xaxes(range=[0, 1])
 
-
-
-    #TODO Figure out how to parse the data and display it well in Gradio
-    #paragraphs = get_paragraphs(polling_endpoint, header)
-
-    #endpoints = ["redacted-audio", ]
-    #r = []
-    return [language, html, highlight_dict, summary_html, sent, entity_html, fig]
+    return [language, paras, highlight_dict, summary_html, topics_html, sent, entity_html, content_fig]
 
 
 
@@ -336,7 +329,7 @@ with gr.Blocks(css=css) as demo:
     with gr.Tab('Transcription'):
         trans_tab = gr.Textbox(placeholder="Your transcription will appear here ...", lines=5, max_lines=25)
     with gr.Tab('Auto Highlights'):
-        highlights = gr.HighlightedText()
+        highlights_tab = gr.HighlightedText()
     with gr.Tab('Summary'):
         summary_tab = gr.HTML()
     with gr.Tab("Detected Topics"):
@@ -413,9 +406,10 @@ with gr.Blocks(css=css) as demo:
                          audio_file,
                          mic_recording],
                  outputs=[language,
-                          topics_tab,
-                          highlights,
+                          trans_tab,
+                          highlights_tab,
                           summary_tab,
+                          topics_tab,
                           sentiment_tab,
                           entity_tab,
                           content_tab])
