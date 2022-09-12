@@ -218,7 +218,7 @@ def submit_to_AAI(api_key,
     cont = j['content_safety_labels']['summary']
     d = {'label': [], 'severity': []}
     for key in cont:
-        d['label'] += [key]
+        d['label'] += [' '.join(key.split('_')).title()]
         d['severity'] += [cont[key]]
 
     content_fig = px.bar(d, x='severity', y='label')
