@@ -256,17 +256,18 @@ with open('styles.css', 'r') as f:
 
 
 with gr.Blocks(css=css) as demo:
-    gr.HTML('<img src="file/images/logo.png">')
+    gr.HTML('<img src="file/images/logo.png" class="logo">')
 
-    gr.HTML("<center><p>Audio Intelligence Dashboard</p></center>"
-            "<p>Check out the BLOG NAME blog to learn how to build this dashboard.</p>"
-            "<p>To use: <ol><li>Enter AssemlbyAI API Key - you can get one here for free</li>"
+    gr.HTML("<h1 class='title'>Audio Intelligence Dashboard</h1>"
+            "<p class='>Check out the [BLOG NAME] blog to learn how to build this dashboard.</p>")
+
+    gr.HTML("<p>To use:</p> <ol><li>Enter AssemlbyAI API Key - you can get one here for free</li>"
             "<li>Upload or Record Audio</li>"
             "<li>Select which options you would like to analyze</li>"
             "<li>Click 'Submit'</li>"
-            "<li>Review the Results<ol></li></p>"
-            "<p>Note that this is not an official AssemblyAI product and was created for educational purposes</p>")
+            "<li>Review the Results</li><ol>")
 
+    gr.HTML('<div class="alert alert__info"><span>Note that this is not an official AssemblyAI product and was created for educational purposes</span></div>')
 
     gr.HTML("<p>API Key:</p>")
 
@@ -302,13 +303,14 @@ with gr.Blocks(css=css) as demo:
         value=["Automatic Language Detection"]
     )
 
-    w = "<div>" \
-        "<p>WARNING: Automatic Language Detection not available for Hindi or Japanese. For best results on non-US " \
-        "English audio, specify the dialect instead of using Automatic Language Detection</p>" \
-        "<p>WARNING: Some Audio Intelligence features are not available in some languages. See " \
+    w = "<div class='alert alert__warning'>" \
+        "<p>Automatic Language Detection not available for Hindi or Japanese. For best results on non-US " \
+        "English audio, specify the dialect instead of using Automatic Language Detection" \
+        "Some Audio Intelligence features are not available in some languages. See " \
         "<a href='https://airtable.com/shr53TWU5reXkAmt2/tblf7O4cffFndmsCH?backgroundColor=green'>here</a> " \
         "for more details.</p>" \
         "</div>"
+
     auto_lang_detect_warning = gr.HTML(w)
 
     audio_intelligence_selector = gr.CheckboxGroup(
