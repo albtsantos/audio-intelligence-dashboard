@@ -8,6 +8,38 @@ import io
 upload_endpoint = "https://api.assemblyai.com/v2/upload"
 transcript_endpoint = "https://api.assemblyai.com/v2/transcript"
 
+# Converts Gradio checkboxes to AssemlbyAI header arguments
+transcription_options_headers = {
+    'Automatic Language Detection': 'language_detection',
+    'Speaker Labels': 'speaker_labels',
+    'Filter Profanity': 'filter_profanity',
+}
+
+audio_intelligence_headers = {
+    'Summarization': 'auto_chapters',
+    'Auto Highlights': 'auto_highlights',
+    'Topic Detection': 'iab_categories',
+    'Entity Detection': 'entity_detection',
+    'Sentiment Analysis': 'sentiment_analysis',
+    'PII Redaction': 'redact_pii',
+    'Content Moderation': 'content_safety',
+}
+
+language_headers = {
+    'Global English': 'en',
+    'US English': 'en_us',
+    'British English': 'en_uk',
+    'Australian English': 'en_au',
+    'Spanish': 'es',
+    'French': 'fr',
+    'German': 'de',
+    'Italian': 'it',
+    'Portuguese': 'pt',
+    'Dutch': 'nl',
+    'Hindi': 'hi',
+    'Japanese': 'jp',
+}
+
 def make_header(api_key):
     return {
     'authorization': api_key,
@@ -126,6 +158,18 @@ def get_paragraphs(polling_endpoint, header):
         paragraphs.append(para)
 
     return paragraphs
+
+
+# Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
+def make_true_dict(transcription_options, audio_intelligence_selector):
+    aai_tran_keys = [transcription_options_headers[elt] for elt in transcription_options]
+    aai_audint_keys = [audio_intelligence_headers[elt] for elt in audio_intelligence_selector]
+
+    aai_tran_dict = {key: 'true' for key in aai_tran_keys}
+    aai_audint_dict = {key: 'true' for key in aai_audint_keys}
+
+    return {**aai_tran_dict, **aai_audint_dict}
+
 
 
 def _split_on_capital(string):
@@ -355,4 +399,6 @@ def make_entity_html(d, highlight_color="#FFFF0080"):
         h += '</li>'
     h += "</ul>"
     return h
+
+
 

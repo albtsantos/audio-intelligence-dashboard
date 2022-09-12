@@ -11,39 +11,7 @@ from scipy.io.wavfile import write
 
 from helpers import make_header, upload_file, request_transcript, make_polling_endpoint, wait_for_completion, \
     get_paragraphs, make_html_from_topics, make_paras_string, create_highlighted_list, make_summary, \
-    make_sentiment_output, make_entity_dict, make_entity_html
-
-# Converts Gradio checkboxes to AssemlbyAI header arguments
-transcription_options_headers = {
-    'Automatic Language Detection': 'language_detection',
-    'Speaker Labels': 'speaker_labels',
-    'Filter Profanity': 'filter_profanity',
-}
-
-audio_intelligence_headers = {
-    'Summarization': 'auto_chapters',
-    'Auto Highlights': 'auto_highlights',
-    'Topic Detection': 'iab_categories',
-    'Entity Detection': 'entity_detection',
-    'Sentiment Analysis': 'sentiment_analysis',
-    'PII Redaction': 'redact_pii',
-    'Content Moderation': 'content_safety',
-}
-
-language_headers = {
-    'Global English': 'en',
-    'US English': 'en_us',
-    'British English': 'en_uk',
-    'Australian English': 'en_au',
-    'Spanish': 'es',
-    'French': 'fr',
-    'German': 'de',
-    'Italian': 'it',
-    'Portuguese': 'pt',
-    'Dutch': 'nl',
-    'Hindi': 'hi',
-    'Japanese': 'jp',
-}
+    make_sentiment_output, make_entity_dict, make_entity_html, make_true_dict
 
 
 def change_audio_source(val, plot, file_data=None, mic_data=None):
@@ -154,10 +122,11 @@ def submit_to_AAI(api_key,
                   audio_file,
                   mic_recording):
     # comment out when want to full test, for now just loading json response
-    '''
+    #'''
+    # Make request header
     header = make_header(api_key)
 
-
+    # Create a dictionary
     true_dict = make_true_dict(transcription_options, audio_intelligence_selector)
 
     final_json, language = make_final_json(true_dict, language)
@@ -176,20 +145,20 @@ def submit_to_AAI(api_key,
     wait_for_completion(polling_endpoint, header)
 
     r = requests.get(polling_endpoint, headers=header, json=final_json)
-    '''
+    #'''
 
     # TRANSCRIPT
     # endpoint = f"https://api.assemblyai.com/v2/transcript/{j['id']}/paragraphs"
-    # highlights = requests.get(endpoint, headers=header)
-    # highlights = highlights.json()['paragraphs']
+    # paras = requests.get(endpoint, headers=header)
+    # paras = highlights.json()['paragraphs']
     # paras = make_paras_string(highlights)
-    # Load from file instead so dont have to use aai key
-    with open("../paras.txt", 'r') as f:
-        paras = f.read()
 
-    with open('../response.json', 'r') as f:
-        j = json.load(f)
-    #print(json.dumps(j, indent=4, separators=(',', ':')))
+    # Load from file instead so dont have to use aai key
+    #with open("../paras.txt", 'r') as f:
+    #    paras = f.read()
+
+    #with open('../response.json', 'r') as f:
+    #    j = json.load(f)
 
 
     # DIARIZATION
@@ -225,16 +194,6 @@ def submit_to_AAI(api_key,
     content_fig.update_xaxes(range=[0, 1])
 
     return [language, paras, utts, highlight_dict, summary_html, topics_html, sent, entity_html, content_fig]
-
-# Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
-def make_true_dict(transcription_options, audio_intelligence_selector):
-    aai_tran_keys = [transcription_options_headers[elt] for elt in transcription_options]
-    aai_audint_keys = [audio_intelligence_headers[elt] for elt in audio_intelligence_selector]
-
-    aai_tran_dict = {key: 'true' for key in aai_tran_keys}
-    aai_audint_dict = {key: 'true' for key in aai_audint_keys}
-
-    return {**aai_tran_dict, **aai_audint_dict}
 
 
 # Takes in a dictionary of AAI API options and adds all required other kwargs
