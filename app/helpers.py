@@ -4,6 +4,8 @@ import requests
 import time
 from scipy.io.wavfile import read, write
 import io
+import plotly.express as px
+
 
 upload_endpoint = "https://api.assemblyai.com/v2/upload"
 transcript_endpoint = "https://api.assemblyai.com/v2/transcript"
@@ -15,6 +17,7 @@ transcription_options_headers = {
     'Filter Profanity': 'filter_profanity',
 }
 
+# Converts Gradio checkboxes to AssemblyAI header arguments
 audio_intelligence_headers = {
     'Summarization': 'auto_chapters',
     'Auto Highlights': 'auto_highlights',
@@ -25,6 +28,7 @@ audio_intelligence_headers = {
     'Content Moderation': 'content_safety',
 }
 
+# Converts selected language in Gradio to language code for AssemblyAI header argument
 language_headers = {
     'Global English': 'en',
     'US English': 'en_us',
@@ -40,10 +44,11 @@ language_headers = {
     'Japanese': 'jp',
 }
 
+
 def make_header(api_key):
     return {
-    'authorization': api_key,
-    'content-type': 'application/json'
+        'authorization': api_key,
+        'content-type': 'application/json'
     }
 
 
@@ -86,25 +91,6 @@ def upload_file(audio_file, header, is_file=True):
     return upload_response.json()
 
 
-'''
-Example **kwargs:
-
-{
-"speaker_labels": True,
-"language_detection": True,  # Otherwise need to specify language with e.g. "language_code": "en_us"
-"filter_profanity": True,
-# AUDIO INTELLIGENCE:
-"redact_pii": True,
-"redact_pii_policies": ["drug", "injury", "person_name"], - more types https://www.assemblyai.com/docs/audio-intelligence#pii-redaction
-"redact_pii_sub": "entity_name",
-"auto_highlights": True,
-"content_safety": True,
-"iab_categories": True,
-"sentiment_analysis": True,
-"auto_chapters": True,
-"entity_detection": True,
-}
-'''
 def request_transcript(upload_url, header, **kwargs):
     # If input is a dict returned from `upload_file` rather than a raw upload_url string
     if type(upload_url) is dict:
@@ -160,8 +146,8 @@ def get_paragraphs(polling_endpoint, header):
     return paragraphs
 
 
-# Given transcription / audio intelligence options, create a dictionary to be used in AAI JSON
 def make_true_dict(transcription_options, audio_intelligence_selector):
+    """Given transcription / audio intelligence options, create a dictionary to be used in AssemblyAI request"""
     aai_tran_keys = [transcription_options_headers[elt] for elt in transcription_options]
     aai_audint_keys = [audio_intelligence_headers[elt] for elt in audio_intelligence_selector]
 
@@ -170,6 +156,21 @@ def make_true_dict(transcription_options, audio_intelligence_selector):
 
     return {**aai_tran_dict, **aai_audint_dict}
 
+
+def make_final_json(true_dict, language):
+    """Takes in output of `make_true_dict()` and adds all required other key-value pairs"""
+    # If automatic language detection selected but no language specified, default to US english
+    if 'language_detection' not in true_dict:
+        # TODO handle this in a better way
+        if language is None:
+            language = "US English"
+        true_dict = {**true_dict, 'language_code': language_headers[language]}
+    # If PII Redaction is enabled, add redaction policies
+    # TODO: Allow selection of PII policies
+    if 'redact_pii' in true_dict:
+        true_dict = {**true_dict, 'redact_pii_policies': ['drug', 'injury', 'person_name', 'money_amount']}
+    print(true_dict)
+    return true_dict, language
 
 
 def _split_on_capital(string):
@@ -216,7 +217,7 @@ def _make_tree(c, ukey=''):
     return d
 
 
-def _make_html_tree(dic, level=0, HTML = ''):
+def _make_html_tree(dic, level=0, HTML=''):
     """
     Generates an HTML tree from an output of _make_tree
     :param dic: 
@@ -233,10 +234,11 @@ def _make_html_tree(dic, level=0, HTML = ''):
             else:
                 HTML += f'<p class="topic-L{level}">{_split_on_capital(key)}</p>'
 
-            HTML = _make_html_tree(dic[key], level=level+1, HTML=HTML)
+            HTML = _make_html_tree(dic[key], level=level + 1, HTML=HTML)
         else:
             HTML += f'<p class="topic-L{level} istopic">{_split_on_capital(key)}</p>'
     return HTML
+
 
 def _make_html_body(dic):
     """Makes an HTML body from an output of _make_tree"""
@@ -250,21 +252,21 @@ def _make_html_body(dic):
 def _make_html(dic):
     """Makes a full HTML document from an output of _make_tree using styles.css styling"""
     HTML = '<!DOCTYPE html>' \
-       '<html>' \
-       '<head>' \
-       '<title>Another simple example</title>' \
-       '<link rel="stylesheet" type="text/css" href="styles.css"/>' \
-       '</head>'
+           '<html>' \
+           '<head>' \
+           '<title>Another simple example</title>' \
+           '<link rel="stylesheet" type="text/css" href="styles.css"/>' \
+           '</head>'
     HTML += _make_html_body(dic)
     HTML += "</html>"
     return HTML
 
 
-#make_html_from_topics(j['iab_categories_result']['summary'])
+# make_html_from_topics(j['iab_categories_result']['summary'])
 def make_html_from_topics(dic, threshold=0.0):
     """Given a topics dictionary from AAI Topic Detection API, generates a structured HTML page from it"""
     # Filter low probab items out
-    dic = {k:v for k,v in dic.items() if float(v) >= threshold}
+    dic = {k: v for k, v in dic.items() if float(v) >= threshold}
 
     # Get list of remaining topics
     cats = list(dic.keys())
@@ -278,7 +280,6 @@ def make_html_from_topics(dic, threshold=0.0):
     tree = _make_tree(cats)
 
     return _make_html(tree)
-
 
 
 def make_paras_string(paragraphs):
@@ -301,8 +302,8 @@ def create_highlighted_list(paragraphs_string, highlights_result, rank=0):
     # Get max/min ranks and find scale/shift we'll need so ranks are mapped to [MIN_HIGHLIGHT, MAX_HIGHLIGHT]
     max_rank = max([i['rank'] for i in highlights_result])
     min_rank = min([i['rank'] for i in highlights_result])
-    scale = (MAX_HIGHLIGHT-MIN_HIGHLIGHT)/(max_rank-min_rank)
-    shift = (MAX_HIGHLIGHT-max_rank*scale)
+    scale = (MAX_HIGHLIGHT - MIN_HIGHLIGHT) / (max_rank - min_rank)
+    shift = (MAX_HIGHLIGHT - max_rank * scale)
 
     # Isolate only highlight text and rank
     highlights_result = [(i['text'], i['rank']) for i in highlights_result]
@@ -313,17 +314,17 @@ def create_highlighted_list(paragraphs_string, highlights_result, rank=0):
         starts = [c.start() for c in re.finditer(highlight, paragraphs_string)]
         # Create list of locations for this highlight with entity value (highlight opacity) scaled properly
         # TODO: REPLACE WITH LIST COMPREHENSION
-        e = [{"entity": rank*scale+shift,
+        e = [{"entity": rank * scale + shift,
               "start": start,
               "end": start + len(highlight)}
-              for start in starts]
+             for start in starts]
         entities += e
 
     # Create dictionary
     highlight_dict = {"text": paragraphs_string, "entities": entities}
 
     # Sort entities by start char - a bug in Gradio
-    highlight_dict['entities'] = sorted(highlight_dict['entities'], key= lambda x: x['start'])
+    highlight_dict['entities'] = sorted(highlight_dict['entities'], key=lambda x: x['start'])
 
     return highlight_dict
 
@@ -339,24 +340,25 @@ def make_summary(chapters):
     html += "</div>"
     return html
 
+
 # STUFF FOR SENTIMENT ANALYSIS
 green = "background-color: #159609"
 red = "background-color: #cc0c0c"
 
 
 def to_hex(num, max_opacity=128):
-    return hex(int(max_opacity*num))[2:]
+    return hex(int(max_opacity * num))[2:]
 
 
 def make_sentiment_output(sentiment_analysis_results):
     p = '<p>'
     for sentiment in sentiment_analysis_results:
         if sentiment['sentiment'] == 'POSITIVE':
-            p += f'<mark style="{green+to_hex(sentiment["confidence"])}">' + sentiment['text'] + '</mark> '
+            p += f'<mark style="{green + to_hex(sentiment["confidence"])}">' + sentiment['text'] + '</mark> '
         elif sentiment['sentiment'] == "NEGATIVE":
-            p += f'<mark style="{red+to_hex(sentiment["confidence"])}">' + sentiment['text'] + '</mark> '
+            p += f'<mark style="{red + to_hex(sentiment["confidence"])}">' + sentiment['text'] + '</mark> '
         else:
-            p += sentiment['text']
+            p += sentiment['text'] + ' '
     p += "</p>"
     return p
 
@@ -401,4 +403,12 @@ def make_entity_html(d, highlight_color="#FFFF0080"):
     return h
 
 
+def make_content_safety_fig(cont_safety_summary):
+    d = {'label': [], 'severity': []}
+    for key in cont_safety_summary:
+        d['label'] += [' '.join(key.split('_')).title()]
+        d['severity'] += [cont_safety_summary[key]]
 
+    content_fig = px.bar(d, x='severity', y='label')
+    content_fig.update_xaxes(range=[0, 1])
+    return content_fig
