@@ -334,10 +334,11 @@ def make_entity_dict(response, offset=40):
         # Make sure start and end with a full word
         p = '... ' + ' '.join(p.split(' ')[1:-1]) + ' ...'
         # Add to dict
-        if entity['entity_type'] in d:
-            d[entity['entity_type']] += [[p, entity['text']]]
+        label = ' '.join(entity['entity_type'].split('_')).title()
+        if label in d:
+            d[label] += [[p, entity['text']]]
         else:
-            d[entity['entity_type']] = [[p, entity['text']]]
+            d[label] = [[p, entity['text']]]
 
     return d
 
